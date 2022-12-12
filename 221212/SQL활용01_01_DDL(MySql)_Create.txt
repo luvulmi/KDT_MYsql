@@ -1,0 +1,398 @@
+==================================================
+
+*** 문자셋(Character Set)
+말 그대로 특정 '문자(좀 더 정확히는 symbol)'가 컴퓨터에 저장될 때 어떠한 '코드'로 인코딩되어 저장될 것인지에 대한
+규칙이 정의되어있는 집합을 말함. (A character set is a set of symbols and encodings.)
+대표적인 것으로는 ASCII, 한글을 지원하는 EUC-KR, 유니코드 UTF-8, UTF-16 등이 있음.
+문자셋은 자신이 처리할 문자 집합이 얼마나 큰가에 따라 하나의 '문자'를 저장하는데 필요한 저장공간의 크기가 달라지게 된다.
+또한 항상 모든 문자들을 동일한 크기로 인코딩하는 고정폭 방식의 문자셋이 있는가 하면, 
+EUC-KR(1~2바이트)이나 UTF-8(1~3바이트)과 같이 가변폭 방식의 인코딩을 사용하는 문자셋도 있다.
+
+** 콜레이션(Collation)
+이것은 특정 문자셋에 의해 데이터베이스에 저장된 값들을 검색하거나 정렬 등의 작업을 위해
+문자들간에 서로 '비교'할때 사용하는 규칙들의 집합이다. 
+(A collation is a set of rules for comparing characters in a character set.) 
+따라서, 일반적인 Data Type에는 적용되지 않고, CHAR, VARCHAR, TEXT와 같은 데이터 타입을 가지는 칼럼들에 대해서만 적용된다.
+주로 대소문자를 구별하는 binary 형식을 사용할 것인지, 대소문자를 구별하지 않는 Case Insensitive 형식을 사용할 것인지로 나누어진다.
+Case Insensitive 형식을 사용하는 collation들은 모두 collation 이름의 끝에 'ci'라는 문자가 붙어있다.
+
+==================================================	
+
+** 실행1 : 시작버튼에서 ...
+	=> MySql 8.5 Command Line Client ...선택
+	=> Password : mysql
+
+** 실행2 : cmd 창으로 ...
+	=> mysql -u root -p 입력후 엔터 
+	=> Password : mysql  입력 
+	
+** 종료 	=> exit
+-----------------------------------------------------------------------------------	
+
+** 사용자계정 만들기
+	=> root 계정으로 로그인 후
+	=> create user apple identified by 'admin' ;
+** 권한 부여 
+	=> grant all privileges on javadb to apple ;
+	=> 생성 후 login
+		cmd 창에서 mysql -u apple -p admin ;
+
+** 사용자계정 & 권한 설정
+	=> grant all privileges on javadb apple@localhost identified by 'admin' with grant option;
+	=> flush privileges;
+	( 사용자계정 & 권한 설정을 동시에 처리 한 후에는 반드시 위의 명령을 실행 ) 
+
+* privilege 1. (특정 개인단체가 갖는) 특전   2. (사회 내의 부유층이 갖는) 특권
+
+
+** passsword 변경하기 
+
+=> 5.x 이전버전
+$mysql> UPDATE user SET Password=PASSWORD('admin') WHERE USER='root';
+UPDATE user SET Password=PASSWORD('mysql') WHERE USER='root';
+
+=> 8.x 이상 버전
+alter user 'root'@'localhost' identified with mysql_native_password by 'new password';
+
+
+** 사용자계정 확인하기
+	=> select User from mysql.user ;
+-----------------------------------------------------------------------------------
+** DataBase 
+* 확인 => drop database javadb;
+*  만들기   => create database mydb ;
+*  확인하기 => show databases ; 
+	       => 설치시 자동생성: test , mysql(mysql의 다양한 정보 저장)
+
+*  사용하기 => use mydb ;
+*  현재 사용중인 DB 표시하기 => select database() ;
+*  삭제하기 => drop database db1 ;
+               => select database() ;
+
+-----------------------------------------------------------------------------------
+=====================================================
+
+*** 관련 능력 단위
+
+***  능력단위 : 2001020205_16v4   데이터 입출력 구현
+    ** 능력단위요소
+	=> 2001020205_16v4.3  데이터 조작 프로시저 작성하기 
+     	=> 2001020205_16v4.4  데이터 조작 프로시저 최적화하기
+
+***  능력단위 : 22001020413_16v3   SQL활용
+    ** 능력단위요소
+      => 2001020413_16v3.1 기본 SQL 작성하기
+      => 2001020413_16v3.2 고급 SQL 작성하기
+   
+=================================================
+2001020413_16v3.1 기본 SQL 작성하기
+=================================================
+
+1. DDL(Data Definition Language) : 데이터를 정의
+   - create, alter, drop, rename, truncate등
+   - 자동커밋이 발생
+
+2. DML(Data Manipulation Language) : 데이터를 조작하는 기능
+※기본적인 DML SQL문  ( C:create/insert,  R:read/select, U:update,  D:delete )
+   - select, insert, delete, update
+   - transcation처리 지원 (commit, rollback)
+   - mySQL : autoCommit  true => START TRANSACTION;  실행 후 적용가능  
+   - java : autoCommit  true => transaction 처리위해 autoCommit 을 false 로 한 후 실행.
+ 
+   ( DQL : 데이타검색 )
+   - select 
+
+3. DCL(Data Control Language) : 계정관리
+   - grant : 권한부여  ,  revoke : 권한회수
+
+4. TCL : Transaction 제어
+   - START TRANSACTION, commit, rollback, savepoint
+
+-------------------------------------
+
+** schema : 개요, 윤곽
+** domain : 영역, 범위
+** revoke : 폐지하다
+** grant : 승인하다, 인정하다
+
+==MySql 과 오라클 비교 ===================================
+
+*** 오라클은 계정 별로 Table 관리
+
+*** 반면에 MySql 은 Table 위에 DataBase가 있음
+	( 계정 아래에 반드시 DataBase가 있어야 Table 생성이 가능하다 )	
+	=> DataBase 생성 후 Table 생성 
+	만들기   => create database db1 ;
+	확인하기 => show databases ; 
+	사용하기 => use db1 ;
+	현재 사용중인 DB 표시하기 => select database() ;
+	삭제하기 => drop database db1 ;
+
+*** 데이터 타입 의 다른점 
+	-> oracle : number
+	-> mySql : integer , float 로 구별해서 사용 
+
+==================================================== 
+
+*** DDL 연습
+
+*** 기본 문법
+=> DDL 자료형
+- 정수형: int(m), integer(m) 
+	-> m : 최대 표시 너비를 나타내며 표시 가능한 최대 너비는 255
+ 	-> 부호포함 범위는 -2147483648 - 2147483647
+	-> 부호 없는 범위는 0 ~ 4294967295
+
+- 실수형: float(m,d) 	 
+	-> m은 총 자릿수 d는 소수점 뒤의 자릿수
+	-> m과 d를 생략하면 하드웨어에서 허용하는 한계까지 값이 저장
+	-> float(7,4) : 999.9999 
+	-> double(m,d) 은 MySQL 8.0.17부터 더이상 사용되지 않음
+
+- 문자열 : char(n)  
+	-> n : 글자수 , 0 ~ 255 길이까지 저장
+	-> 용도 : 	데이터의 길이가 고정인 경우
+		( 핸드폰번호 등 고정길이 데이터를 varchar 로하면 길이 보관 1~2 byte 추가사용하게됨 )
+		변경 가능성이 높은 경우
+		(내부에서 별도연산 없이 수정됨 -> varchar 는 추가로 필요한 블럭생성을 위해 더많은시간이 소요됨) 
+ 
+- 문자열 : varchar(n)
+	-> n : 글자수 , 0 ~ 65,535 길이까지 저장
+	-> 길이 저장을 위해 1byte ~ 2byte를 사용 (길이 255 이하 1byte, 이상 2byte)
+	     그러므로 char(5), varchar(5)의 경우에는 varchar가 더 많은 메모리를 차지함.
+	-> 용도 : 데이터 길이를 예측하기 힘든 경우, 변경할 가능성이 낮은 경우 사용하면 좋음.
+
+- Text문자열(text) : 문자 셋과 콜레이션이 있는 텍스트 데이터를 저장
+- BLOB(Binary Large Object)  : 문자 셋이나 콜레이션이 없는 바이너리 데이터를 저장
+
+- 시간관련(date, time, datetime, timestamp) 
+
+=> char 와 varchar 의 차이점
+	- char : 고정크기  char(5) -> A---- , ab---, abc--, abcd-, abcde
+	- varchar : 가변크기 varchar(5) -> A , ab, abc, abcd, abcde
+
+=> 이진 데이터 타입
+	- BINARY(n) - 255 byte 
+    	- BLOB(n) - 이진 데이터 타입 ( 65,535 byte)
+	- MEDIUMBLOB - 최대 16,777,215 byte
+    	- LONGBLOB - 최대 4.294,967,295 byte
+
+----------------------------------
+=> DDL 제약조건 5종류 ( Constraint )
+-> DBMS 가 오류시 에러 발생 시켜 무결성을 보장해줌 
+- not null : 반드시 입력
+- unique : 유일성
+- Primary key :  unique, not null
+- check : 원하는 조건식 사용가능
+- 외래키 (Foreign Key, 참조키)
+----------------------------------
+=> 편리한 기능
+- default : 기본값
+- auto_increment : 자동증가
+
+-----------------------------------
+*** Table 관리 Sql
+
+=> SHOW TABLES;
+=> DESC member ;  
+// -> table 의 구조를 표시함.
+// describe : 묘사하다, 서술하다, 분석표
+
+=> SHOW COLUMNS FROM member;
+=> SHOW FULL COLUMNS from member;
+   ( Collation : 콜레이션 
+	      문자열 형태로  저장된 값들을 검색하거나 정렬 등의 작업을 위해
+	      문자들간에 서로 '비교'할때 사용하는 규칙들의 집합이다. 
+	      이름의 끝에 'ci'라는 문자가 붙어있으면
+	      대소문자를 구별하지 않는 Case Insensitive 형식을 사용하고 있음을 의미 ) 
+==================================================== 
+
+1.  Table (Enity) 생성
+
+1.1) 신규생성
+
+=> 제약조건 없음
+
+CREATE TABLE test (
+Id VARCHAR(10),
+name VARCHAR(10),
+age INT);
+
+=> select * from test ;  -> Empty set (0.10 sec)
+=> insert
+	- id 에 p.key 를 설정하지 않았으므로 동일 id 입력 가능 
+
+insert into test(id, name, age) values("apple", "사과나무", 20);
+insert into test(name, age, id) values("김사과", 22,"apple");
+insert into test(name, id) values("김사과", "apple");
+
+insert into test(id, name, age) values("banana", "바나나", 25);
+
+** truncate 와 drop 비교
+=> mysql> truncate test;  
+=> mysql> select * from test;
+	Empty set (0.03 sec)
+
+=> mysql> drop table test;
+=> mysql> select * from test;	
+	ERROR 1146 (42S02): Table 'mydb.test' doesn't exist
+----------------------------------------------
+
+=> 제약조건 적용 
+
+CREATE table friends( 
+seq int auto_increment primary key,
+name varchar(20) not null, 
+addr varchar(20) default "Korea", 
+phone char(20) unique, 
+age int(3) check(100>Age>0)
+); 
+
+-> 비교
+CREATE table friends( 
+seq int auto_increment,
+name varchar(20) not null, 
+addr varchar(20) default "Korea", 
+phone char(20) unique, 
+age int(3) check(100>Age>0),
+Primary Key(seq)
+);
+
+** 테이블 생성확인
+=> desc friends;
+=> SHOW COLUMNS FROM friends;
+=> SHOW FULL COLUMNS from friends;
+
+
+**  제약 조건 확인
+SELECT constraint_name, constraint_type
+FROM information_schema.table_constraints
+WHERE table_name = 'friends' ;
+ 
+*** ** AUTO_Increment 값 확인하기
+
+mysql> select LAST_INSERT_ID() ;  // 데이터 입력하기전 확인
+
+select LAST_INSERT_ID() from friends where seq = LAST_INSERT_ID() ; 
+	-> Empty set (0.04 sec)   // 데이터 입력하기전 확인
+ 
+=============================================
+** Record (Row) 입력
+
+-> 1) simple insert : 컬럼갯수, 순서 일치
+insert into friends values(2, "홍길동2","분당","010-1234-1234",33); //OK
+insert into friends values("홍길동2","서울","010-1234-2234",33);  // Error
+
+-> 2) 컬럼지정 , default
+insert into friends(name, addr,phone, age) values("홍길동1","서울","010-1234-7777",33);
+insert into friends(name, addr,phone, age) values("홍길동4","미금","010-1234-4444",33);
+insert into friends(name, addr,phone, age) values("홍길동5","용인","010-1234-5555",33);
+
+=> default Test :  값을 입력하는 컬럼만 적용
+insert into friends(name, phone, age) values("홍길동2","010-1234-7778",33);
+
+-> 3) 제약조건 확인
+	3.0) Primary Key
+insert into friends values(1, "홍길동2","분당","010-9999-1234",33);  
+	-> ERROR 1062 (23000): Duplicate entry '1' for key 'friends.PRIMARY'
+
+	3.1)  phone 유일성	
+insert into friends(name, addr,phone, age) values("홍길동2","서울","010-1234-2234",33);
+
+	3.2) name : not null
+insert into friends(name, addr,phone, age) values("","서울","010-1234-3234",33);  // OK
+insert into friends(addr,phone, age) values("서울","010-1234-3235",33); 
+// -> ERROR 1364 (HY000): Field 'name' doesn't have a default value
+
+	3.3) age: check
+insert into friends(name, addr, phone, age) values("김유신","서울","010-1234-5234",133);
+// -> ERROR 3819 (HY000): Check constraint 'friends_chk_1' is violated.
+
+-> 4) addr : default 확인
+insert into friends values(1, "홍길동","010-1234-1234",33); // Error -> default 확인 불가
+insert into friends(name, phone, age) values("홍길동7","010-1234-7234",77);
+
+---------------------------------------------------------------
+1.2) 다른 테이블을 이용해서 신규 테이블을 생성하는 방법
+=> 교재 10p
+-------------------------------------------
+
+1.2.1) 테이블 구조와 데이터 모두 복사
+=> 컬럼, 조건별 row 선택가능
+=> 단, 제약조건은 복사가 안됨 
+=> not null 과 default 는  복사됨
+ 
+create table mytest as select * from friends ;
+select * from mytest;
+
+=> 확인
+SHOW FULL COLUMNS from mytest;
+
+=> 확인 : 동일 p.key 입력 
+	insert into mytest values(6, "KeyTest", "용인", "010-1234-1234", 33);
+
+=> 확인 : Not Null 이외의 제약조건은 복사가 안됨
+	desc friends ;
+	desc mytest ;
+ 
+=> 원하는 column, row 선택가능 그러나 제약조건은 복사 안됨.
+create table mytest2 as select name, phone from friends where addr="용인"  ;
+select * from mytest2 ;
+
+--------------------------------------------------------------------------------------
+1.2.2) 데이터 없이 테이블 구조만 복사 
+
+=> where 에서 항상 false 인 조건을 지정  
+
+-> create table mytest3 as select * from friends where 1=2 ;
+
+-> select * from mytest3;
+-> desc mytest3;
+-------------------------------------------------------------------------------------
+2.3) 이미 만들어진 Table에 다른 Table의 자료들 복사하기
+=> 테이블 구조가 같아야함, 원하는 column, row 선택가능
+
+=> 실습
+-> 구조만 있는 Table 만들기
+	_ where 무조건 false 조건을 지정하여 data 가 선택되지 않도록 함
+	create table myjo as select * from jo where 1=2;
+	
+-> 자료만 복사하기
+	* mytest  -> mytest3
+	insert into mytest3 select * from mytest ;
+	-> select * from mytest3;
+
+	* member(id, name, point) -> mytest2 (id, name, age)
+	insert into mytest2 (id, name, age) select id, name, point from member ; 
+	insert into test select id, name, point from mymember ;
+
+========================================================
+*** Transaction 제어
+
+   - START TRANSACTION, commit, rollback
+
+=> 실습 : mytest3 에 insert 후  commit, rollback Test
+	1) START TRANSACTION 전 ->  auto commit 
+	insert into mytest3 values(7, "트란잭","용인","010-1111-2222",25);
+	-> select * from mytest3;
+	-> 입력취소 :  rollback;   // Query OK,...
+	-> rollback 확인 :  select * from mytest3;  
+	    ( 입력즉시 commit 되었으므로 rollback 되지않음 )
+
+	2) START TRANSACTION 적용 
+	-> 처리 결과를 버퍼에 보관,
+	-> commit을 해야 실제 Table 에 반영됨 
+	-> rollback 하면 취소됨
+	
+	START TRANSACTION;  // Query OK, ....
+	insert into mytest3 values(8, "Start","용인","010-1111-2222",25);  // Query OK, ....
+	select * from mytest3;
+	-> 취소 : rollback;  // Query OK, ....  
+                           select * from mytest3;
+	
+	insert into mytest3 values(8, "Start","용인","010-1111-2222",25);  // Query OK, ....
+	select * from mytest3;
+	-> 실제 Table 에 반영 : commit;
+	 	select * from mytest3;	
+
+
