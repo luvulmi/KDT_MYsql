@@ -1,0 +1,218 @@
+========================================================
+ 
+2. 테이블 구조변경 (필드 추가 , 수정, 이름변경, 삭제)
+
+-------------------------------------------------
+=> alter table table명 add 컬럼명 타입 ;
+	alter table mytest3 add score int default 100;
+	select *  from mytest3;
+
+=> alter table table명 modify 컬럼명 타입 ;
+	( 컬럼크기, 컬럼타입, not null 부여 )
+
+=> alter table table명 rename column 컬럼명 to new컬럼명  ;
+	alter table friends rename column addr to address ;
+
+=> alter table table명 drop column 컬럼명  ;
+	alter table mytest2 drop column score ;
+-----------------------------------------------------------------------
+
+** ADD 
+=> 준비
+	-> Table 확인하기 : show tables;
+	-> mytest1 에 존재하는 seq 3 번 추가하기
+	insert into mytest1 values(3, "홍길동", "성남시", "010-1234-4444", 22); 
+
+
+=> 제약조건 추가 
+	
+
+	alter table mytest3 add primary key (seq);	
+
+	alter table mytest1 add primary key (seq);
+	-> 현재 : seq 에 중복 data 가 있는 상태 
+	ERROR 1062 (23000): Duplicate entry '3' for key 'mytest1.PRIMARY'
+		 
+	-> 해결 : delete from  ~~  ;  // 중복자료 삭제 또는 수정
+		delete from mytest3 where seq=6 and addr="서울";
+		update mytest1 set seq=5 where name="홍길동" ;
+	
+	alter table mytest1 add primary key (seq); // OK	
+	-> 확인 : desc mytest3 ;
+	-> 동일자료 입력 :  insert into mytest3 values(8,"test","분당","010-1234-1234",22,44); 
+ 			 -> ERROR 1062 (23000): Duplicate entry '8' f.......
+
+	-> mytest1, phone 에 unique 조건추가
+	alter table mytest1 add unique (phone);
+
+=> 컬럼 추가 :
+=> mymember에 주소 추가 :  address varchar2(20)
+     alter table mymember add address varchar2(10) default '경기도' ;
+
+=> mytest1 에 point  float(7,2) , default 1000.50   컬럼 추가
+	alter table mytest1 add point float(7,2) default 1000.50;
+
+-----------------------------------------------------------------------
+
+** DROP : 컬럼 삭제
+=> mytest3 에서 age 삭제하기
+    alter table mytest3 DROP COLUMN age ;
+=> mytest1 에서 point 삭제하기
+	alter table mytest1 drop column point;
+-----------------------------------------------------------------------
+ 
+** RENAME : 컬럼명 수정 
+-> mytest1 에서 seq 를 idno 로 변경
+	alter table mytest1 rename column seq to idno;
+
+-> ( custno => custid 로 변경하기 )
+alter table mytest3 RENAME COLUMN addr to address;
+alter table mymember rename column birthd to birthday ;
+-----------------------------------------------------------------------
+
+** MODIFY
+ 
+=> 제약조건 변경: student , age 의 check(age>0 and age<200) 변경
+	alter table student modify age check(age>0 and age<200) ;  
+	-> modify 불가: ERROR 1064 (42000): You have an error in your SQL syntax; .....
+	alter table student add check(age>0 and age<200) ;  // add OK
+
+=> 컬럼 Type, 길이 수정
+
+** Test Table : mystudent : data (record, row, tuple) 가 없는경우
+	실수-> 정수
+	alter table mymember2 modify weight number(10) ;  
+	문자 -> 정수 
+	alter table mymember2 modify birthd number(10) ; 
+	문자 -> 실수
+	alter table mymember2 modify password number(7,3);
+	축소변환
+	alter table mymember2 modify name varchar(10) ;
+
+** Test Table : mymember :  data (record, row, tuple) 가 있는경우
+
+=> name 30 -> 10  : downsizing  기존의  자료들이 10을 넘지않음 : OK
+	alter table mytest3 modify address varchar(10);  // OK
+	alter table mytest3 modify address varchar(4);   // 최대크기: 5 인경우 
+	-> ERROR 1265 (01000): Data truncated for column 'address' at row 3
+
+     name 10 -> 3  : downsizing  기존의  자료들이 3을 넘음
+	alter table mymember modify name varchar(3);
+	-> ERROR 1265 (01000): Data truncated for column 'name' at row 3
+	( MySql 한글 한글자 크기: 1 )
+
+	-> mytest1
+	alter table mytest1 modify name varchar(5);  // OK
+	alter table mytest1 modify name varchar(3);  //  ERROR 1265 (01000): Data truncated for.....
+
+	alter table mytest1 modify name varchar(10);
+
+=> varchar -> char ( name 으로 )
+	alter table mytest1 modify name char(10);   
+	*** char varchr 비교 
+	-> 값 비교는 가능하다
+              select my.name, idno, my.age, f.name, seq  from mytest1 my, friends f where my.name=f.name;  
+	-> 오류구문들
+	select my.name, idno, age, f.name, seq  from mytest1 my, friends f where my.name=f.name;      
+
+=> 실수형-> 정수형 으로 변경 
+   ( weight 를 number(10) 로 )
+	alter table mymember modify weight number(10) ;  
+	-> Error  ( 입력된 값이 있어서 할 수 없다 )  
+	-> Type 은 실수 이지만 정수값으로 모두 수정 후 Test
+	-> 컬럼의 값을 delete 후 Test
+
+	alter table student modify point int(10) ;  // OK: float(5,2) -> int(10) 
+	-> 자리수 넉넉, 원본Data 에 소수이하 값이 없는 경우 성공
+	
+	alter table student modify point float(4,2);  // 100 이상의 값을 가지고 있는  int point 를 modify
+	-> ERROR 1264 (22003): Out of range value for column 'point' at row 1
+ 	alter table student modify point float(7,2);  // 99999.99 까지 가능
+ 
+
+=> 정수형-> 문자형 으로 변경 (data 손실이 없으면 가능)
+	-> point 를 varchar(10) 으로 변경
+	alter table mytest3 modify point varchar(10) ;  => OK
+
+	-> friends 의 age 를 varchar(5)
+	alter table friends modify age varchar(5) ;
+
+
+=> 문자형 -> 실수, 정수형
+	alter table mytest3 modify point int(5) ;  // 문자 -> 정수
+	alter table mytest3 modify weight float(5,2) ;  // 문자 -> 실수
+
+=> 실수형-> 문자형 으로 변경
+	- mytest3 에 weight float(5,2)  default 123.45  추가 하기 
+		alter table mytest3 drop column weight;
+		alter table mytest3 add weight float(5,2) default 123.45 ;
+	- 문자형 varchar(15) 로 변경하기
+	alter table mytest3 modify weight varchar(15) ;  
+	-> 컬럼의 값이 있으면 오류 ? : data 손실이 없으면 가능
+
+=> 문자열 -> 문자열
+	-> DownSize ( password 크기를 50 으로 )
+	alter table mymember modify password varchar(50); 
+	( 수정될 수 없는 값이 있으면 오류 )
+	 
+	-> UpSize ( name 크기를 40 으로 )
+	alter table mymember modify name varchar(40) ; 
+
+=> 연습
+	mymember 에 varchar(10) , testweight 컬럼 추가,
+	testweight 컬럼에 weight 값 넣기
+	-> alter table mymember add testweight varchar(10);
+	-> update mymember set testweight = weight ;
+	    select * from mymember ;
+=================================================
+4)  테이블명 변경
+
+   alter table 원래이름 rename  to New이름
+ 	-> alter table mytest3 rename to newtest;
+	-> alter table newtest rename to test;
+ 
+=================================================
+
+5) 테이블 삭제
+
+=> TRUNCATE 
+
+-> create table test99 as select * from test ;
+-> truncate table test99 ;
+-> 확인  
+
+-> data 만 삭제됨 
+-> DDL 이므로 rollback 안됨 -> 즉시 DB 에 반영
+   (조건 없이 모든 데이터를 delete 하는것과의 차이점)
+
+** 실습
+-> trsnsaction 적용, newtest 는  TRUNCATE , mytest1 delete all  비교
+	start transaction;
+	truncate table newtest; // DDL -> transaction 이 종료됨
+	delete from mytest2;   
+	// DML -> rollback 적용되어야 하지만, 위 DDL 때문에 transaction 이 종료되어 rollback 안됨(주의)
+
+	select * from newtest;
+	select * from mytest2;
+	rollback;
+ 
+=> DROP : 삭제 (data, 구조 모두 삭제)
+-> drop table mytest2;
+-> 확인  desc newtest; 
+
+=> 참조관계인 Table 삭제
+	-> truncate parent : truncate table jo;
+	    ORA-02266: unique/primary keys in table referenced by enabled foreign keys
+	-> drop parent : drop table jo;
+	    ORA-02449: unique/primary keys in table referenced by foreign keys
+
+	-> child Table 부터  truncate, drop
+	    drop table student;
+	    drop table jo;	
+
+drop table memtest3 ;
+-> 테이블이 삭제되었습니다.
+select * from memtest3 ;
+
+
+=================================================
