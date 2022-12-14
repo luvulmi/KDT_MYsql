@@ -1,0 +1,575 @@
+=================================================
+
+***  참조(외래) 키 설정 
+=> Reference (Foreign) Key
+=> Parent & Child Table SQL 구문 처리 순서 중요 
+	-> Create, Drop, Truncate, insert, update, delete 등
+=> 실습
+	-> 1. 참조(외래) 키 설정 전
+	-> 2. 참조(외래) 키 설정 후  
+	-> 3. 참조(외래) 키 설정 + Cascade 적용 : Parent Table 의 처리결과 자동적용 
+
+-------------------------------------------------------------------------------------
+
+=> 참조(외래) 키 설정방법
+
+-> 컬럼 레벨로 지정
+[[ Parent Table ]]
+create table jo1(
+jno int(2) Primary Key,
+chief int(10) not null,
+jname varchar(20) not null,
+note varchar(10)  
+);
+
+[[ Child Table ]]
+* auto_increment -> primary key 만 사용가능
+
+create table member1(
+snum int(10) auto_increment primary key,
+sname varchar(10) not null,
+age int(3) not null,
+info varchar(30),
+jno int(2) references jo1(jno)  
+);
+
+-> 오류없이 생성은 되지만 참조키 적용안됨 ( Foreign 키는 테이블 레벨로 설정해야함 )
+
+-> child Table 먼저 생성 Test
+create table student77(
+snum int(10) auto_increment primary key,
+sname varchar(10) not null,
+age int(3) not null,
+info varchar(30),
+jno int(1) references jo77(jno)  
+);
+
+=> 비교확인 (동일) : Foreign 키 설정 안되었음을 확인
+desc student ;
+desc student77 ;
+SHOW FULL COLUMNS from student;
+SHOW FULL COLUMNS from student77;
+
+**  제약 조건 확인  : Foreign 키 설정 안되었음을 확인 
+SELECT constraint_name, constraint_type
+FROM information_schema.table_constraints
+WHERE table_name = 'member1' ;
+
+--------------------------------------------
+-> 테이블 레벨로 지정
+
+=> Parent Table
+create table jo2(
+jno int(2),
+chief int(10) not null,
+jname varchar(20) not null,
+note varchar(10),
+Primary Key(jno)  
+);
+
+=> Child Table
+-> 먼저 생성시 오류
+	ERROR 1824 (HY000): Failed to open the referenced table 'jo2' 
+
+create table member2(
+snum int(10) auto_increment,
+sname varchar(10) not null,
+age int(3) not null,
+info varchar(30),
+jno int(2),
+Primary Key(snum),
+Foreign Key member2(jno) references jo2(jno)
+);
+
+=> 확인
+-> desc jo2; 	
+    desc member2;
+-> SHOW FULL COLUMNS from member2;
+
+=>  제약 조건 확인
+SELECT constraint_name, constraint_type
+FROM information_schema.table_constraints
+WHERE table_name = 'member2' ;
+
+--------------------------------------------------------------------
+  Field   | Type      |  Null   | Key | Default | Extra             |
++-------+-------------+------+-----+---------+-------------------+
+| snum  | int         |  NO   | PRI  | NULL    | auto_increment |
+| sname | varch..   |  NO   |        | NULL    |                       |
+| age     | int        |  NO   |        | NULL    |                       |
+| info     | varch..  |  YES   |        | NULL    |                       |
+| jno      | int        | YES   | MUL | NULL    |
+
+**  MUL ( Multiple Occurences Column )
+=> 다중 사용 칼럼이란 의미.
+     즉 두개 이상의 테이블에서 사용하고 있는 칼럼이라는 의미로
+     한 곳에서는 기본키(P.k), 다른 곳에서는 외래키(F.k) 로 사용되는 칼럼
+
+-------------------------------------------------------------------------------------
+
+*** 연관성 확인하기
+
+=> insert 1 :  Foreign 키 설정 안되어 있는 경우
+		- insert 순서 무관 ( member1 먼저 insert ) 
+-> member1
+insert into member1(sname, age, info, jno) values("엄미현",21,"평생강사",1); 
+insert into member1(sname, age, info, jno) values("홍길동",22,"평생강사",2); 
+insert into member1(sname, age, info, jno) values("홍길동",22,"평생강사",5); 
+
+select * from member1 ;
+
+-> jo1
+=> 참고 :  insert into jo1 values(1,1,'조이름','전원연봉오천'); 
+
+insert into jo1 values(6,21,'김고정','취업 희망');
+insert into jo1 values(5,3,'do가자','취업으로'); 
+insert into jo1 values(3,16,"3조","전원연봉1억");
+insert into jo1 values(1,5,'unique','연봉1억가즈아');
+insert into jo1 values(2, 10, "천지창조", "Amen");
+insert into jo1 values(4,11,'4조','전원 취업');
+
+select * from jo1 ;
+
+-> 입력확인 : 조별로 출력
+select * from student order by jno ;
+select jno, snum, sname, age, info from student order by jno ;
+
+=> insert 2 :  Foreign 키 설정이 되어 있는 경우 ( jo2,  member2 )
+	- insert 순서중요 ( member2 먼저 insert -> 오류 ) 
+	- Test : insert into member2(sname, age, info, jno) values("엄미현",21,"평생강사",1); 
+		-> ERROR 1452 (23000): Cannot add or update a child row: a foreign key constraint fails
+		    (`mydb`.`student2`, CONSTRAINT `student2_ibfk_1` FOREIGN KEY (`jno`) REFERENCES `jo2` (`jno`))
+		-> 입력시에 ForeignKey 로 설정된 jno 의 값은 반드시 jo2 Table에 존재해야함.
+	
+	-> jo2 insert
+	insert into jo2 values(6,21,'김고정','취업 희망');
+	insert into jo2 values(5,3,'do가자','취업으로'); 
+	
+	insert into jo2 values(1,5,'unique','연봉1억가즈아');
+	insert into jo2 values(2, 10, "천지창조", "Amen");
+	insert into jo2 values(3,16,"3조","전원연봉1억");
+
+	insert into jo2 values(4,11,'4조','전원 취업');
+	
+	select * from jo2;
+
+	-> member2 insert
+	insert into member2(sname, age, info, jno) values("엄미현",21,"평생강사",1); 
+	insert into member2(sname, age, info, jno) values("유정현",21,"연봉1억",2); 
+	insert into member2(sname, age, info, jno) values("하서연",21,"연봉1억",4); 
+
+select * from student2;
+
+-> 삭제 Test
+	- Parent Table 의 Data 삭제
+	: delete ( child 가 존재하는 자료 ) 
+	delete from jo2 where jno=1 ;  // ERROR 1451 (23000): Cannot delete or update a parent row:
+	delete from jo2 where jno=3 ;  // child 가 없는 자료 (OK)
+	
+	 : truncate table jo2;
+	  ERROR 1701 (42000): Cannot truncate a table referenced in a foreign key constraint
+			    (`mydb`.`student2`, CONSTRAINT `student2_ibfk_1`)
+	: 단, Child Data 가 1건도 없는 Data 는 삭제 또는 수정가능 
+
+	- Child Table Data 삭제 : 입력, 삭제, 수정 가능 (단, Parent 에 없는 jno 는 입력불가능) 
+	: truncate table student2;
+	: drop table student2;
+
+-> 수정 Test
+	- Child : 없는 jno 로는 수정이 안됨 
+		update member2 set jno=7 ;   // ERROR 1452 (23000): Cannot add or update a child row...
+	- Parent : Child 가 존재하는 jno 는 수정불가
+		update jo2 set jno=9 where jno=1;  // ERROR 1451 (23000): Cannot delete or update a parent..
+
+--------------------------------------------------------------------------------------------------
+
+=> Test 3 :  ForeignKey  + ON Delete Cascade , ON Update Cascade  ( jo3,  member3 )
+	- create (jo3 먼저) , insert ( member3 먼저 ) 
+	- 수정, 삭제시에 Child Data 에 동시 적용 
+	( Child Data 가 존재하는 Parent Data 도 수정, 삭제 가 가능)
+	
+-> create ( jo3, member3 )
+
+** PARENT
+create table jo3(
+jno int(1),
+chief int(10) not null,
+jname varchar(20) not null,
+note varchar(10),
+Primary Key(jno)  
+);
+
+** CHILD
+	: Cascade 설정 
+	: Parent 의 결과 자동적용 
+create table member3(
+snum int(10) auto_increment primary key,
+sname varchar(10) not null,
+age int(3) not null,
+info varchar(30),
+jno int(1),
+Foreign Key member3(jno) references jo3(jno) 
+	ON Delete Cascade 
+	ON Update Cascade
+);
+
+=> 확인
+-> desc jo3; 	
+    desc member3;
+-> SHOW FULL COLUMNS from member3;
+
+=>  제약 조건 확인
+SELECT constraint_name, constraint_type
+FROM information_schema.table_constraints
+WHERE table_name = 'member3' ;
+
+=>insert 3
+	-> jo3 insert
+		
+	insert into jo3 values(1,5,'unique','연봉1억가즈아');
+	insert into jo3 values(2, 10, "천지창조", "Amen");
+	insert into jo3 values(3,16,"3조","전원연봉1억");
+ 
+	select * from jo3;
+
+	-> member3 insert
+insert into member3(sname, age, info, jno) values("강지훈",26,"학생",1); 
+insert into member3(sname, age, info, jno) values("최수빈", 26, "내 일 잘 하는 멋진 사람", 2); 
+insert into member3(sname, age, info, jno) values('김상명', 31 ,'메모장 글씨 크기 좀 키워주세요',3);
+
+select * from member3 ;
+
+-> 수정
+Start Transaction;
+update jo3 set jno=9 where jno=1;
+-> 비교 : update jo2 set jno=9 where jno=1;
+	: ERROR 1451 (23000): Cannot delete or update a parent row: a foreign key constraint fails 
+	 (`mydb`.`student2`, CONSTRAINT `student2_ibfk_1` FOREIGN KEY (`jno`) REFERENCES `jo2` (`jno`))
+
+-> 삭제
+delete from jo3 where jno=2;  // OK
+select * from jo3;
+select * from member3;
+
+-> student3 자료 정정 연습
+update student3 set jno=3 where sname= '임설희' ;
+update student3 set jno = 2 where snum=22;
+update student3 set jno=3  where sname= '박병수';
+
+Rollback;
+
+** 참조관계 적용 (Join : 참조키 설정과 무관하게 적용가능)
+=> jo3, member3  join : snum, sname, jno, jname 출력하기
+
+select snum, sname, m.jno, jname 
+from member3 m, jo3 j
+where m.jno = j.jno; 
+
+select snum, sname, m.jno, jname from member1 m, jo1 j where m.jno = j.jno;    
+
+** 실습 
+=> Foreign Key member3(jno) references jo3(jno) 
+	ON Delete Cascade 
+	ON Update Cascade  
+	설정된 경우 parent 의 jno 를 rename 하는 경우
+	alter table jo3 rename column jno to test ;   // OK
+	desc jo3 ;
+	desc member3 ;
+
+	alter table jo2, member2 rename column jno to test ; 
+	 // ERROR 1064 (42000): You have an error in your SQL syntax; ...----------------------------------------------------------------------------------------------------
+=======================================================
+**실습
+==> student 부모
+==> jo 자식테이블 생성, insert
+
+**복습
+	student의 age int(3), jno int(2) 변경.
+	alter table student modify age int(3);
+	alter table student modify jno int(2);
+
+=> jo 자식테이블 생성
+create table jo(
+jno int(2),
+jname varchar(20) not null,
+chief varchar(20) not null,
+note varchar(30),
+Primary key(jno)
+);
+
+=> jo insert
+insert into jo values (1, "굉장해엄청나", "awesome", "민성아술좀줄이자");
+insert into jo values(2,"구해조","dbdb1114@","연봉100 억");
+insert into jo values(3, "백업은 기본이조", "qy15", "도진아 보고싶어");
+insert into jo values(4, "상호형 빵사조", "gumi", "상호형 도대체 언제와?");
+insert into jo values(5,"(주)식빵","PSY","조장은 바보다");
+select from jo;
+update jo set chief='dbdb1114@' where jname='구해조';
+
+=> join 복습
+	-> jo list에 조장 이름 출력하기.
+	| jno jname chief cname note  |
+	select j.jno, j.jname, j.chief, s.name, j.note from jo j, student s where j.chief = s.id;
+
+	-> student list에 *, jname 출력하기.
+	select s.id, s.name, s.age, s.jno, j.jname, s.info from jo j, student s where j.jno = s.jno order by jno;
+
+=> jno, Foreign Key, cascade 복습
+-> studentr(Child), jor(Parent) 생성하기
+
+** Parent Table 생성.
+create table jor(
+jno int(2),
+jname varchar(20) not null,
+chief varchar(20) not null,
+note varchar(30),
+Primary key(jno)
+);
+
+** Child Table
+create table studentr(
+id varchar(10),
+name varchar(10) not null,
+age int(3) check( age>0 and age<100 ),
+jno int(2),
+info varchar(20),
+point float(7,2) default 100,
+Primary key(id),
+Foreign key studentr(jno) references jor(jno)
+	on delete cascade
+	on update cascade
+);
+
+* jor data
+insert into jor values (1, "굉장해엄청나", "awesome", "민성아술좀줄이자");
+insert into jor values(2,"구해조","dbdb1114@","연봉100 억");
+insert into jor values(3, "백업은 기본이조", "qy15", "도진아 보고싶어");
+insert into jor values(4, "상호형 빵사조", "gumi", "상호형 도대체 언제와?");
+insert into jor values(5,"(주)식빵","PSY","조장은 바보다");
+select * from jor ;
+
+* studentr data
+insert into studentr(id,name,age,jno,info) values ("awesome","정선주",32,1,"불로소득");
+insert into studentr(id, name, age, jno, info) values("backup","이수진",29,3,"집...");
+insert into studentr(id,name,age,jno,info) values("ush","엄상호",30,4,"개발자고수");
+insert into studentr(id, name, age, jno, info) values("CBH","최병현",27,1,"돈많은 백수");
+insert into studentr(id,name,age,jno,info) values("ssj","심승준",27,5,"돈 많은 백수");
+insert into studentr(id, name, age, jno, info) values("nihil0", "김태현", 30, 3, "웹 개발자 썩은물되기");
+insert into studentr(id, name, age, jno, info) values("kjw", "경진우", 26, 2, "취업");
+insert into studentr(id,name,age,jno,info) values ("Song","송강현",24,4,"공부하자");
+insert into studentr(id, name, age, jno, info) values ("hsy", "하서연", 27, 4, "건물주");
+insert into studentr(id, name, age, jno, info) values ("LYJ", "임윤지", 29, 3, "천재");
+insert into studentr(id,name,age,jno,info) values("RSJ","류승제",32,5,"꿈은 없구요 그냥 놀고싶습니다");
+insert into studentr(id, name, age, jno, info) values("dbdb1114@","유정현",26,2,"집가고싶다");
+insert into studentr(id,name,age,jno,info) values ("qy15","안도진",29,3,"타워팰리스");
+insert into studentr(id,name,age,jno,info) values("KYR","김유림",26,5,"로또일등최고금액당첨");
+insert into studentr(id, name, age, jno, info) values("jjang","유미현",25,1,"우리 반 모두 행복하기 ㅎㅎ");
+insert into studentr(id, name, age, jno, info) values("HYK", "하영권", 29, 2, "집가고싶다");
+insert into studentr(id,name,age,jno,info) values("gumi","박규민",29,4,"안녕하세요");
+Insert into studentr(id, name, age,jno,info) values("ms","김민성",26,1,"선생님 쉬는시간이요!");
+insert into studentr(id,name,age,jno,info) values ("PSY","정호진",29,5,"로또 최고 금액 여러번 당첨");
+insert into studentr(id,name,age,jno,info) values("st","이해선",32,2,"없어용");
+select * from studentr ;
+
+=> 차이점 복습
+-> student에 없는 조 입력, 수정
+	insert into student(id, name, age, jno,info) values("zzzz","김부자",22,6,"조가 없어용");
+	// 잘못된 값으로 수정될 수 있음.
+	update student set jno=10 where id="ush"; //에러.
+
+	delete from student where id="ush"; 
+	delete from studentr where id="ush";
+
+-> jo에 child가 존재하는 data 수정 & 삭제.
+	update jo set jno=33 where jno=3; // student 3조 data에 영향x.
+	update jor set jno=33 where jno=3; // student 3조 data는 33으로 같이 변경됨.
+	
+	
+	delete from jo where jno = 1; // student 1조 data에 영향x.
+	delete from jor where jno = 1;
+	update from jor where jno = 1; // 부모 data에도 삭제.
+
+=> studentr 원상복구
+	-> 1조 추가
+	-> 33조 3조로 변경(studentr 동시 변경됨.)
+	
+	update jor set jno=3 where jno = 33;
+	insert into jor values (1, "굉장해엄청나", "awesome", "민성아술좀줄이자");
+	-> studentr에 1조 입력하기. (student 1조 가져오기)
+	insert into studentr(id,name,age,jno,info,point) select id,name,age,jno,info,point from student where jno=1;
+
+=> jo, 구조만 남기고 모두 삭제 후, data는 jor에서 가져오기.
+	-> truncate table jo;
+	select * from jo;
+	insert into jo select * from jor;
+
+
+----------------------------------------------------------------------------------------------------
+=======================================================
+
+*** Join Test 
+
+=> 두 개 이상의 테이블로부터 관련 있는 데이터를 읽어올 때 사용
+=> 기본 구문
+	select A. 칼럼1, A. 칼럼2, B. 칼럼3, B. 칼럼4
+	from [테이블1] as A, [테이블2] as B
+	where A.[ 칼럼x] = B.[ 칼럼y]
+=> 조인 사용에 따른 장단점
+	- 다수의 테이블을 한번에 조회할 때 유용
+	- 조인이 복잡해 질수록 조회 속도가 느려질 가능성 높음
+
+=> 별명(alias) 적용 : table명, column명 (as 생략가능) 
+
+** 실습
+=> student3  목록 에 조이름(jo3의 jname) 추가 해서 출력하기 - id순으로 출력.
+	select id, name, age, s.jno, jname 조이름, info from student as s, jo j where s.jno = j.jno;
+	// 컬럼이 테이블 두개에 존재하는 경우 명시해주어야함 (as 사용)
+	// 컬럼 뒤에 컬럼명 명시 가능.
+
+
+-> Test1 : join 조건을 지정하지 않은경우
+
+	select id, name, age, s.jno, j.jno, jname 조이름, info from student as s, jo j;
+
+	- select snum, sname, age, info, jno, jname from student3, jo3 ;
+	  ERROR 1052 (23000): Column 'jno' in field list is ambiguous
+  	  ( 어느 Table의 jno 값을 가져오는지 불명확 )
+	- select snum, sname, age, info, student3.jno, jname from student3, jo3 ;
+	- 앨리어스 적용 : Table명, 컬럼명 에 적용가능 ( as 는 생략가능 )   
+	- select snum, sname 이름, age, info, s.jno, j.jno, jname as 조이름 from student3 as s, jo3 j ;
+	- 결과 : student3 갯수 * jo3 갯수 : 빠르게 많은양의 데이터를 만들때 이용됨.
+
+-> Test2 :  join 조건을 지정하는경우
+	- select snum, sname 이름, age, info, s.jno, jname as 조이름 from student3 as s, jo3 j
+	  where s.jno = j.jno ;
+
+-> Join 기능
+	- 컬럼을 이용해서 다른테이블을 참조 
+	- Foreign Key 를 설정해야만 가능한것은 아님
+	- Foreign Key 설정과 무관하게 참조가능한 컬럼이 있으면 모두 가능함. 
+	 ( 확인 : student, jo 로 동일 구문 작성 Test ) 
+	  select snum, sname 이름, age, info, s.jno, jname as 조이름 from student as s, jo j
+	  where s.jno =  j.jno ;   ( 실행결과 차이점 : 출력순서, F.Key 설정시 F.Key 순으로출력 됨 )
+
+	** Foreign Key 설정 Test 결과 비교 - jno F.K순으로 출력.
+	select id, name, age, s.jno, j.jno, jname 조이름, info from studentr as s, jor j where s.jno = j.jno;
+	select id, name, age, s.jno, j.jno, jname 조이름, info from studentr as s, jor j;
+	// 조건이 없으면 id 기준으로 나옴.
+
+	** c, u, d 구문 에도 적용가능
+	update board b, member m set b.cnt=100, m.age=100 where b.seq=1 and b.id=m.id 
+
+-> Join 연습 ( jo3, student3 )
+	- 조(jo3) 의 목록 출력시 조장의 이름과 나이 출력하기 
+	select j.jno, jname, note, chief, sname, age from jo3 j, student3 s where j.chief = s.snum;
+
+	- student Table에서 조장 목록 출력
+	select snum, sname 이름 ,age , info, s.jno from student3 s, jo3 j where s.snum = j.chief ;
+
+	- student3 의 학생목록 출력시 jno, jname, chief, 조장이름 출력하기 
+	  Table 3개 Join :  student3, jo3, student3 ( 조장이름 을 가져오기위함 )
+	select s.snum, s.sname, s.age, s.info, s.jno, j.jname, j.chief,  c.sname 조장이름 
+	from student3 s, jo3 j, student3 c
+	where s.jno=j.jno and j.chief=c.snum ;  // self_Join
+  
+	select s.jno, jname, chief , s.sname , c.sname from student3 s, jo3 j, student3 c 
+	where s.jno = j.jno and c.snum = j.chief;  // 김형일
+
+=========================================================
+ *** 그룹함수 와 GROUP BY ~ Having
+=> count(*) row 갯수  ,  sum(?)  ,  avg(?)  ,  max(?)  ,  min(?)
+=> where : table 에 존재하는 컬럼으로 조건지정
+     Having: 그룹함수 를 대상으로하는 조건 지정
+
+	-> 전체
+	count :  *  모든 record count , 컬럼명 해당컬럼에 값이 있는 record 만 count
+                       -> 예: count(jno)  조가 있는 학생만 count  
+	select count(*), sum(age) , avg(age), max(age), min(age) from student;
+	select count(point), sum(age) , avg(age), max(age), min(age) from student;
+	// 괄호 안에 * 은 모두 출력. 컬럼명 넣을 시 컬럼 값이 존재하는 행만 출력.
+
+	select jno, count(point), sum(age) , avg(age), max(age), min(age) from student;
+	// -> ERROR : 그룹핑을 하지않아서 오류
+
+	-> 조별 통계
+	select jno, count(*), sum(age) , avg(age), max(age), min(age) from student GROUP BY jno order by jno;  // OK
+	select jno, id, snum, count(*), sum(age) , avg(age), max(age), min(age) from student3 GROUP BY jno;  
+	// OK , 그러나 snum 출력의 의미가 없음. group by 로 지정한 컬럼만이 select문으로 올 수 있음.
+	
+	-> 조별 통계 + 조건
+	- jno가 2 초과인 경우만 출력
+	select jno, count(*), sum(age) , avg(age), max(age), min(age) from student
+	where jno > 2
+	GROUP BY jno 
+	order by jno;
+
+	- 조별 인원이 4인 경우만 출력. (count(*) = 4 인경우)
+	select jno, count(*), sum(age) , avg(age), max(age), min(age) from student
+	where count(*) = 4 // 테이블에 존재하는 컬럼을 조건으로 사용할 수 있음.
+	GROUP BY jno 
+	order by jno; // ERROR 1111
+	-> 그룹하는 컬럼 조건은 having 조건으로 해줌.
+
+	 // 테이블에 존재하는 컬럼을 조건으로 사용할 수 있음.
+	select jno, count(*), sum(age) , avg(age), max(age), min(age) from student
+	GROUP BY jno having count(*) = 4
+	order by jno; 
+
+	-> 조별 통계 + 조건 (그룹함수 를 대상으로하는 조건  sum(age) > 110  ) 
+	    ** where 조건 : from 뒤에오는 Table 에 존재하는 컬럼으로 조건줄때 사용
+	    ** having 조건 : 그룹함수 또는 그룹핑 컬럼 을 대상으로하는 조건
+
+	-> where + havinf 모두 사용
+	student의 age > 27 을 대상으로 count(*) > 2인 경우 group 통계
+
+	// student 안에 있는 컬럼이므로 조건 적용 가능.
+	select jno, count(*), sum(age) , avg(age), max(age), min(age) from student
+	where age>27 
+	GROUP BY jno having count(*) > 2
+	order by jno; 
+
+	-> 조이름도 함께 출력 + join 구문 활용.
+	select s.jno, jname, count(*), sum(s.age) , avg(s.age), max(s.age), min(s.age) from student s, jo j
+	where s.age>27 and s.jno = j.jno 
+	GROUP BY jno having count(*) > 2
+	order by s.jno; 
+
+	-> where 조건 : Error
+	select jno, count(*), sum(age) , avg(age), max(age), min(age) from student3 GROUP BY jno where sum(age) > 110 ;
+	: ERROR 1064 (42000): You have an error in your SQL syntax; .......use near 'where sum(age) > 110' at line 1
+
+	select jno, count(*), sum(age) , avg(age), max(age), min(age) from student3 where sum(age) > 110 GROUP BY jno  ;
+	: ERROR 1111 (HY000): Invalid use of group function
+
+	-> having 	
+	select jno, count(*), sum(age) , avg(age), max(age), min(age) from student3 having sum(age) > 110 GROUP BY jno  ;
+	: ERROR 1064 (42000): You have an error in your SQL syntax; ... use near 'GROUP BY jno' at line 1
+
+	select jno, count(*), sum(age) , avg(age), max(age), min(age) from student3 GROUP BY jno having avg(age) > 26 ;
+	
+	** 연습
+	그룹 + 조건 : jno < 5  ( jno 는 having, where 모두 적용가능 ) 
+	select jno, count(*), sum(age) , avg(age), max(age), min(age) from student3 GROUP BY jno having jno < 5 ; // OK
+	select jno, count(*), sum(age) , avg(age), max(age), min(age) from student3 where jno < 5 GROUP BY jno ;  // OK
+	
+	** having, where 모두 적용 하기
+	-> group + 조건1 sum(age)>110 + 조건2 age>25 인 학생들 대상
+	select jno, count(*), sum(age) , avg(age), max(age), min(age) from student3
+	where age > 25
+	GROUP BY jno
+	Having  sum(age)>110 ;  // OK
+
+*** 주말 과제 ( Group + Join ) 
+	-> 조별 통계목록에 조이름 출력하기 
+	select s.jno, jname, count(*), sum(age), avg(age), max(age), min(age) 
+	from student3 s, jo3 j
+   	where s.jno = j.jno 
+  	GROUP BY jno;	
+
+*** AUTO_Increment 값 확인하기
+	select LAST_INSERT_ID() from student where snum = LAST_INSERT_ID() ;
+
+	-> insert 에 적용
+	insert into student values(LAST_INSERT_ID()+1,'홍길동',29,2); 
+
+   
