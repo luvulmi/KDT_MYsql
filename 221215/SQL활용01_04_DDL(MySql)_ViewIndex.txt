@@ -1,0 +1,304 @@
+=================================================
+** MySQL Data 위치
+=> C:\ProgramData\MySQL\MySQL Server 8.0\Data\mydb
+=> my.ini 에서 확인 가능 
+
+=================================================
+** ORACLE member Table 생성
+=> MySql 과 차이점 ( varchar-> varchar2 , int -> number , float -> number ) 
+
+create  table member (    
+id varchar2(10) primary key ,
+password varchar2(10),
+name varchar2(30),
+lev varchar2(1),
+birthd varchar2(10) ,
+point number(5),
+weight number(5,2)) ; 
+
+insert into member values('javasam','12345','김유신','A','1990-01-01',1000,55.89); 
+insert into member values('green','12345','홍길동','A','1991-02-02',2000,67.89); 
+insert into member values('banana','12345','바나나','B','1993-04-04',4000,44.89); 
+insert into member values('coffee','12345','카푸치노','B','1994-05-05',5000,60.55); 
+insert into member values('apple','12345','스티브','C','1995-09-09',10000,40.7); 
+insert into member values('leesam','12345','이순신','D','1992-03-03',3000,75.09); 
+commit;
+select * from member ;
+
+** ORACLE board Table 생성
+=> MySql 과 차이점
+	- AUTO_Increment 방법다름 
+	     -> insert 에서 sequence 객체 또는 nvl 함수 사용
+	     -> 생성문에서 적용 불가능
+	- System Date : CURRENT_TIMESTAMP-> sysdate
+
+create  table board (    
+seq number(5) primary key,
+title varchar2(200) not null,
+id varchar2(10) not null,
+content varchar2(2000),
+regdate date DEFAULT sysdate,
+cnt number(5) default 0) ; 
+
+insert into board (seq, title,id,content) values
+(1, 'Spring 이란?','green','처음엔 복잡하고 난해하지만 친해지면 매우 편리하다'); 
+
+insert into board (seq, title,id,content) values
+(2, '의존성 주입?','green', 'dependency injection_객체간의 의존관계를 객체 자신이 아닌 외부의 조립기가  수행한다.'); 
+
+insert into board (seq, title,id,content) values
+(3, '느슨한 결합(loose coupling)', 'banana','객체는 인터페이스에 의한 의존관계만을 알고 있으며 이 의존관계는 구현 클래스에 대한 차이를 모르는채 서로 다른 구현으로 대체가 가능'); 
+
+insert into board (seq, title,id,content) values
+(4, 'Spring의 DI 지원','apple','Spring Container가 DI 조립기(Assembler)를 제공'); 
+
+insert into board (seq, title,id,content) values
+(5, 'Spring 설정파일','coffee','Spring Container가 어떻게 일할 지를 설정하는 파일'); 
+
+commit ;
+select * from board ;
+
+=================================================
+=================================================
+***  능력단위 : 2001020405_16v3   데이터베이스 구현
+    ** 능력단위요소
+      => 2001020405_16v3.1  DBMS(Data Base Management System) 설치하기
+      => 2001020405_16v3.2  데이터베이스 생성하기
+      => 2001020405_16v3.3  데이터베이스 오브젝트 생성하기
+
+*** 필요지식
+     => 데이터베이스 관리 (관리자계정/일반계정, 설치, 환경설정, 접근범위)
+     => 데이터베이스 오브젝트(테이블, 인덱스 ... ) 관리
+	- 생성, 무결성 제약조건
+ 	- index, view
+
+
+=================================================
+---------VIEW ----------------------------------------------------------------
+=================================================
+=> 물리적인 테이블에 근거한 논리적인 가상 테이블
+     그러므로 별도의 저장공간을 필요로 하지 않는다 -> 용량산정시 포함되지않음 	
+    ( 실제 데이터를 중복해서 보관하지 않고 조건문을 보관함 )
+=> 장점
+	: 자주 검색하는 자료유형을 가상의 테이블로 만들어
+	  매번 조건문을 입력하지 않아도 되도록 해줌.
+
+	  보안에 유리
+	( 사용자별로 접근권한을  부여하여 필요한 부분만 view 를 통해 접근토록함. )
+=> 실습	
+	**
+	create view myview01 as select id, name, age from student  ;
+     	select * from myview01;
+	-> view 를 통한 update, delete
+	update myview01 set name = '김그린' where id='xxxx';
+	delete  from myview01 where  id='xxxx';
+
+	-> 확인
+		select * from myview01 ;
+		select id, name from student ;
+
+	** student, jo Join 구문을 view 로 
+	-> myview02 , student jname 출력
+	create view myview02 as select id, name, age, s.jno, jname from student s, jo j where s.jno=j.jno;
+	select * from myview02 ;	
+	-> view 에 조건, 순서 ..... 가능
+	select * from myview02 where jno=1 ;	
+	select * from myview02 order by jno ;	
+	select jno, count(*) from myview02 group by jno ;	
+
+	-> myview03 , jo  조장 name 출력
+	create view myview03 as select j.jno, jname, chief, name, note from jo j, student s where j.chief=s.id; 
+	select * from myview03 ;	
+	
+	**
+	board 의 seq, root, step, indent  / order by root desc, step asc
+	create view myview02 as select  seq, root, step, indent from board order by root desc, step asc;
+
+	** member , board join
+	=> board 에서 seq, title, id, name(글쓴이의 이름), regdate 출력하기 
+	     select  seq, title, b.id, name, regdate from board b, member m where b.id=m.id; 
+	=> create view myview03 as select  seq, title, b.id, name, regdate from board b, member m where b.id=m.id;
+	     select * from myview03; 	
+=> 생성
+	-> myview02 에  order by jno  추가 하는 경우
+	create view myview02 as select id, name, age, s.jno, jname from student s, jo j where s.jno=j.jno order by jno ;
+	// -> ERROR 1050 (42S01): Table 'myview02' already exists
+	create or replace view myview02 as select id, name, age, s.jno, jname from student s, jo j where s.jno=j.jno order by jno ;
+	( 없으면 생성 , 있으면 변경 )
+	-> 확인 : select * from myview02 ;	
+=> 수정 
+	ALTER VIEW 뷰이름 AS SELECT 필드이름1, 필드이름2, ... FROM 테이블이름
+
+=> view name 수정
+	rename view myview02 to testview ;  // ERROR 1064 (42000): ... 허용안됨
+	alter table student rename view myview02 to testview ;   // ERROR 1064 (42000):
+	-> 삭제후 new name 으로 재작성 
+
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+*** desc myview01 -> 조회가능
+
+***  View 목록조회 ( Mysql ) 
+=> MySQL의 기본 스키마인 information_schema 의 views 테이블
+use information_schema;
+select table_schema, table_name, definer from views ;
+select table_schema, table_name, definer, VIEW_DEFINITION from views where TABLE_SCHEMA="mydb" ;
+select * from views where TABLE_SCHEMA="mydb" ;
+
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+*** View 삭제
+drop view myview03;
+
+drop view myView01 ;
+확인 select * from myView01 ;
+
+================================================
+--------- INDEX -----------------------------------------------------------------
+=> SQL 구문의 처리 속도를 향상 시키기 위하여 컬럼에 생성하는 객체
+    단, 인덱스를 위한 추가공간이 필요함.  ( 그러므로 용량산정시에 반드시 반영 )
+    인덱스 생성을 위한 추가시간 필요하므로 Insert, Update, Delete 가 자주 일어나는경우엔 성능에 영향을 줌.
+    (ppt 8장_index 20p)
+
+=> PRIMARY KEY, UNIQUE 제약조건 지정하면 자동 생성
+
+=> 인덱스 조회  :   SHOW INDEX FROM 테이블명; 
+		SHOW INDEX FROM student ;
+		SHOW INDEX FROM jo ;
+
+=> 생성
+CREATE INDEX 인덱스명 ON 테이블명(컬럼명)
+ALTER TABLE 테이블명 ADD INDEX 인덱스명(컬럼명)
+
+	-> student 의 name으로 myindex01 만들기
+	create index namei on student(name) ;
+	-> create or replace 적용
+	create or replace index namei on student(name) ;
+	// ERROR 1064 (42000): You have an error in your SQL syntax;......
+
+-> 확인 : SHOW INDEX FROM student ;
+ 
+-> mind01 : member 의 name 으로 인덱스를 물리적인 공간에 만들어 줌.
+create index myind01 on member(name);
+-> bind01 : board 의 id 로 ...
+create index bind01 on board(id);
+
+-> 조회 속도가 빨라질 수 있겠죠 ??????
+-> 생성확인 : SHOW INDEX FROM student ;
+      
+=> 삭제
+DROP INDEX 인덱스명 ; // Mysql 은 Error
+ALTER TABLE 테이블명 DROP INDEX 인덱스명;
+
+DROP INDEX myindex;  // ERROR 1064 (42000): You have an error in your SQL syntax
+ALTER TABLE student DROP INDEX myindex;  // OK
+ALTER TABLE student DROP INDEX namei; 
+
+=> 인덱스 수정 : 삭제한 후에 다시 생성
+
+=> 조회
+SHOW INDEX FROM student ;
+
+=> 실습 : student , jno (숫자, 중복 많음)
+	-> 생성:	create index jnoi on student(jno) ;
+		select * from student where jno=4; 
+	-> 확인:	SHOW INDEX FROM student ;
+	-> 삭제:	drop index jnoi ;  // ERROR
+		ALTER TABLE student DROP INDEX jnoi; 
+
+
+
+=================================================
+** 복습
+=> 1) student 의 * + jname, 조장이름 출력하기
+	select s.id, s.name, s.age, s.info, s.point, s.jno, jname, j.chief 조장ID, s2.name 조장명
+	from student s,  jo j, student s2
+	where s.jno=j.jno and  j.chief=s2.id
+	order by s.jno ;  
+
+=> 2) studentr 에 추천인 컬럼 추가 , 추천인 이름 출력하기
+	alter table studentr add testid varchar(10) default "awesome" ;
+	SELECT * from studentr ;
+	UPDATE studentr set testid="nihil0" where age>=30 ;
+	UPDATE studentr set testid="jjang" where age<=26 ;
+	-> SELF JOIN
+	select s.id, s.name, s.age, s.info, s.point, s.jno, s.testid, s2.name 추천인
+	from studentr s, studentr s2
+	where s.testid = s2.id ; 
+
+
+=> VIEW 만들기 
+	1) student ( sview01 )
+	create or replace view sview01 as 
+	select s.id, s.name, s.age, s.info, s.point, s.jno, jname, j.chief 조장ID, s2.name 조장명
+	from student s,  jo j, student s2
+	where s.jno=j.jno and  j.chief=s2.id
+	order by s.jno ; 
+	-> select * from sview01;
+
+	2) studentr ( create , replace 모두 Test )
+	create or replace view sview02 as 
+	select s.id, s.name, s.age, s.info, s.point, s.jno, s.testid, s2.name 추천인
+	from studentr s, studentr s2
+	where s.testid = s2.id 
+	order by name ;
+	-> select * from sview02;
+
+=> view 확인
+	-> use information_schema;
+	-> select * from views ;
+	-> select table_schema, table_name, definer, VIEW_DEFINITION from views where TABLE_SCHEMA="mydb" ;
+	    select table_schema, table_name, definer from views where TABLE_SCHEMA="mydb" ;
+
+** 실습 
+=> banana 계정을 만들고, 로그인, Table 생성, insert 권한 부여 후
+	- 로그인
+	- Table 생성, insert 
+	- view 와 index 생성 가능 한지 .... 확인하기 
+=> system 에서  mview02,  boview02 select 권한 to banana  후 Test 하기
+
+** 결과
+create user banana identified by white;
+grant create session, create table to banana;
+grant unlimited tablespace to banana;
+conn banana/white;
+----------------------------
+create table product(
+ id varchar2(10),
+ name varchar2(10),
+ price number(4));
+
+insert into product values('A001','냉장고',1000);
+insert into product values('B001','세탁기',3000);
+insert into product values('kk001','건조기',5000); 
+----------------------------
+=> View 생성 Test
+create view pview as select id, price from product order by price ;
+-> ORA-01031: 권한이 불충분합니다
+
+conn system/oracle
+grant create view to banana ;
+conn banana/red
+create view pview as select id, price from product order by price ;
+select * from pview; 
+
+=> Index 생성 Test
+create index pindex on product(id) ;
+-> 인덱스가 생성되었습니다. (Table 생성 user 에게 있음)
+-> 확인 
+    select INDEX_NAME, TABLE_NAME from USER_INDEXES where TABLE_NAME IN ('PRODUCT') ;
+
+----------------------------
+ => system 에서  mview02,  boview02
+conn system/oracle
+grant select on mview02 to banana ; 
+grant select on boview02 to banana ; 
+
+grant select on mview02, boview02 to banana ;  // XXX
+grant select on mview02, select on boview02 to banana ;  // XXX
+
+conn banana/red
+select * from system.mview02;
+select * from system.boview02;
+
+=========================================================

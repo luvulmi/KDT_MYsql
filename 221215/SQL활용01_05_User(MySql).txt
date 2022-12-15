@@ -1,0 +1,214 @@
+=================================================
+=================================================
+***  능력단위 : 2001020405_16v3   데이터베이스 구현
+    ** 능력단위요소
+      => 2001020405_16v3.1  DBMS(Data Base Management System) 설치하기
+      => 2001020405_16v3.2  데이터베이스 생성하기
+      => 2001020405_16v3.3  데이터베이스 오브젝트 생성하기
+
+*** 필요지식
+     => 데이터베이스 관리 (관리자계정/일반계정, 설치, 환경설정, 접근범위)
+     => 데이터베이스 오브젝트(테이블, 인덱스 ... ) 관리
+	- 생성, 무결성 제약조건
+ 	- index, view
+
+=================================================
+
+*** 교재 관련 사항 :  필요시 참고 하세요 ~~
+
+=> VLDB : very large data base 초대형 데이터베이스.
+=> 오라클 RAC(Oracle Real Application Clusters)
+	https://pomsjung.blog.me/221071396500
+	미국 오라클 회사가 개발한 클러스터링 및 고가용성을 위한 프로그램
+	오라클 RAC을 사용하면 여러 대의 컴퓨터가 동시에 한 대의 DBMS 서버에 접속하여
+	데이터를 이용할 수 있다.
+	이를 이용해 DB 클러스터링을 구현할 수 있다. 
+	오라클 9i에 처음 도입되었다. 
+=> OLTP (OnLine Transaction Processing)
+	주 컴퓨터와 통신 회선으로 접속되어 있는 복수의 사용자 단말에서 발생한 트랜잭션을
+	주 컴퓨터에서 처리하여 그 처리 결과를 즉석에서 사용자 단말측으로 되돌려 보내주는처리형태.
+	네트워크상의 여러 이용자가 실시간으로 데이터베이스의 데이터를 갱신하거나 조회하는 등의
+	단위 작업을 처리하는 방식을 말한다.
+	주로 신용카드 조회 업무나 현금 자동 입출금기 등 비즈니스 분야의 금융 거래에 활용된다.
+	가장 잘 알려진 온라인 트랜잭션 처리(OLTP) 소프트웨어는 IBM의 CICS이고
+	하나 이상의 회사가 관련되는 네트워크 트랜잭션을 지원해야하는 요구에 맞춰
+	트랜잭션들이 네트워크 상의 다른 컴퓨터 플랫폼들 위에서 실행될수 있도록 해주는
+	클라이언트/서버 처리 및 브로커 소프트웨어를 사용한다.
+
+=> DB 가용성 : 애플리케이션의 요청에 대해 서비스를 제공하는 시스템의 능력을 의미하며
+                    DB의 중단에 대한 대응력으로 볼 수 있음. 
+
+=>  ACID :  데이터베이스 트랜잭션이 안전하게 수행된다는 것을 보장한다는 4가지 특성  
+               ( https://blog.naver.com/whdgml1996/222082666933 )
+
+	- 원자성(Atomicity) 
+	  트랜잭션과 관련된 작업들이 부분적으로 실행되다가 중단되지 않는 것을 보장하는 능력이다.
+	예를 들어, 자금 이체는 성공할 수도 실패할 수도 있지만 보내는 쪽에서 돈을 빼 오는 작업만 성공하고 받는 쪽에 돈을 넣는 작업을 실패해서는 안된다.
+	원자성은 이와 같이 중간 단계까지 실행되고 실패하는 일이 없도록 하는 것이다.
+
+	- 일관성(Consistency)
+	트랜잭션이 실행을 성공적으로 완료하면 언제나 일관성 있는 데이터베이스 상태로 유지하는 것을 의미한다.
+	무결성 제약이 모든 계좌는 잔고가 있어야 한다면 이를 위반하는 트랜잭션은 중단된다.
+
+	- 고립성(Isolation) 
+	트랜잭션을 수행 시 다른 트랜잭션의 연산 작업이 끼어들지 못하도록 보장하는 것을 의미한다.
+	이것은 트랜잭션 밖에 있는 어떤 연산도 중간 단계의 데이터를 볼 수 없음을 의미한다.
+	은행 관리자는 이체 작업을 하는 도중에 쿼리를 실행하더라도 특정 계좌간 이체하는 양 쪽을 볼 수 없다.
+	공식적으로 고립성은 트랜잭션 실행내역은 연속적이어야 함을 의미한다. 성능관련 이유로 인해 이 특성은 가장 유연성 있는 제약 조건이다.
+	
+	- 지속성(Durability)
+	성공적으로 수행된 트랜잭션은 영원히 반영되어야 함을 의미한다. 시스템 문제, DB 일관성 체크 등을 하더라도 유지되어야 함을 의미한다.
+	전형적으로 모든 트랜잭션은 로그로 남고 시스템 장애 발생 전 상태로 되돌릴 수 있다.
+	트랜잭션은 로그에 모든 것이 저장된 후에만 commit 상태로 간주될 수 있다.
+
+=================================================
+*** MySQL 사용자(user) 관리 
+
+=> MySQL의 기본 스키마인 mysql 의 user 테이블
+
+=> 목록 조회
+	- 스키마 목록  :  show databases ;
+	- 현재 스키마  :  select database() ;
+	
+	- TABLE 목록  :  SHOW TABLES;
+	- Column 목록:  SHOW COLUMNS FROM student;
+		        SHOW FULL COLUMNS from student;
+
+	- Index 목록   :  SHOW INDEX FROM 테이블명; 
+	- View 목록    :  use information_schema;
+		        select table_schema, table_name, definer, VIEW_DEFINITION from views where TABLE_SCHEMA="mydb" ;	
+
+	- User 목록    :  use mysql; 
+		        select user, host from user;
+
+=================================================
+*** 사용자 (User) 생성
+
+1) 아이디, 비밀번호 생성
+	=> create user 계정ID identified by '비밀번호'; 
+	- create user test01 identified by '1234' ;
+
+2) 아이디 , host , 비밀번호
+	=> create user 계정ID@localhost identified by '비밀번호';
+ 	    ( 주의: 계정ID @ localhost 이렇게 띄어쓰기하면 syntax error 발생 )
+	- create user test02@localhost identified by '1234';
+
+3) localhost만 추가된 계정에 외부 host 접근 권한 추가
+	=> create user 계정ID@'%' identified by '비밀번호';
+	- create user test03@'192.168.%' identified by '1234';
+
+4) 생성확인
+	- use mysql; 
+	- select user, host from user;
+ 
+** 생성예
+
+# ex1) 내부 접근을 허용하는 사용자 추가
+create user 'test'@'localhost' identified by '0000';
+
+# ex2) 외부 접근을 허용하는 사용자 추가
+create user 'test'@'%' identified by '0000';
+
+# ex3) 특정 ip만 접근을 허용하는 사용자 추가
+create user 'test'@'123.456.789.100' identified by '0000';
+
+# ex4) 특정 ip 대역을 허용하는 사용자 추가
+create user 'test'@'192.168.%' identified by '0000';
+
+
+** 사용하기
+=> Workbench 에서 Test
+
+
+*** User 삭제
+=> 생성한 스키마에서 삭제 가능
+=> drop user '사용자';
+	- drop user 'test01';
+=> delete from user where user='사용자';
+	- delete from user where user='test01';
+
+
+*** 사용자 권한 부여
+=> GRANT 명령어를 통해 권한을 줄 수 있다.
+	-> 모든권한 :  GRANT All Privileges  ON  *.*  TO '사용자';  //   *.*  -> 모든DB.모든Table
+	-> 선택적    :  GRANT select, insert ON mydb.student  TO '사용자';
+
+=> 적용 예
+
+# 모든 데이터베이스의 모든 테이블에 모든 권한을 줌
+grant all privileges on *.* to '사용자'@'localhost';
+
+# 특정 데이터베이스의 모든 테이블에 모든 권한을 줌
+grant all privileges on DB이름.* to '사용자'@'localhost';
+
+# 특정 데이터베이스의 특정 테이블에 모든 권한을 줌
+grant all privileges on DB이름.테이블명 to '사용자'@'localhost';
+
+# 특정 데이터베이스의 특정 테이블에 select 권한을 줌
+grant select on DB이름.테이블명 to '사용자'@'localhost';
+
+# 특정 데이터베이스의 특정 테이블에 select, insert 권한을 줌
+grant select, insert on DB이름.테이블명 to '사용자'@'localhost';
+
+# 특정 데이터베이스의 특정 테이블의 컬럼1과 컬럼2의 update 권한을 줌
+grant update(컬럼1, 컬럼2) on DB이름.테이블명 to '사용자'@'localhost';
+
+---------------------------------------------------------------------------------------
+* 일반 사용자 권한 
+=> SELECT, INSERT, UPDATE, DELETE, INDEX, ALTER ,CREATE, DROP, EXECUTE, 
+     CREATE ROUTINE, ALTER ROUTINE, CREATE VIEW, SHOW VIEW 
+
+mysql> grant SELECT, INSERT, UPDATE, DELETE, INDEX,ALTER,CREATE, DROP, 
+	EXECUTE, CREATE ROUTINE, ALTER ROUTINE, CREATE VIEW, SHOW VIEW  
+	privileges on *.* to 'userid'@'192.168.73.11';
+
+* 관리자 권한 
+=> PROCESS, RELOAD, SHOW DATABASES, SHUTDOWN, SUPER
+
+* Replication (백업, 복구) 권한 
+=> Replication : 복제, 사본 
+=> REPL_SLAVE, REPL_CLIENT, [RELOAD]
+---------------------------------------------------------------------------------------
+
+=> 실습
+-> test01 : student , select 권한
+	GRANT select, insert ON mydb.student  TO 'test01';
+
+
+*** 사용자 생성과 권한 부여 한번에 하기
+=> grant all privileges on *.* to '사용자'@'localhost' identified by '비밀번호';
+
+=> example
+grant all privileges on *.* to 'test'@'localhost' identified by '0000';
+
+---------------------------------------------------------------------------------------
+
+*** 권한 회수
+=> Revoke From
+	Revoke {권한} Privileges on {스키마}.{테이블} From {username}@{ip};
+	-> Revoke all on mydb.* from 'test01';
+
+=> 부분적 회수 
+	-> test01 에서 insert 만 회수
+	Revoke insert On mydb.student From 'test01';
+	-> test01 에서 student 의 모든권한 회수
+	Revoke all on mydb.student from 'test01';
+
+=> 모든권한 회수
+	- revoke  all privileges, grant from 'userid' ;
+
+---------------------------------------------------------------------------------------
+
+*** 권한 반영
+
+=> FLUSH PRIVILEGES;
+
+=> 변경한 권한을 즉시 반영시켜주려면 위의 FLUSH 명령어를 실행.
+     ( Workbench 로 Test 하는 경우 Flush 없이 바로 반영됨 )  	  		
+     
+---------------------------------------------------------------------------------------
+
+** revoke : 폐지하다
+** grant : 승인하다, 인정하다
+** privileges : 특전[특혜], 특권 , 특권[특전/특혜]을 주다
+=================================================
