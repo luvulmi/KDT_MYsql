@@ -1,0 +1,642 @@
+=====================================================
+====================================================
+*** DML (Data Manipulation Language) : 데이터를 조작하는 기능
+==================================================== 
+
+=> 데이터 입력, 조회, 수정, 삭제  ( 기본 연산 : CRUD )
+   	- Create :  Insert
+	- Read   :  Select
+	- Update:  Update
+	- Delete :  Delete
+
+=> Transaction ( commit / rollback ) 적용
+=> MySql 기본값 autoCommit : true
+     JDBC   기본값 autoCommit : true
+
+====================================================
+----------------------------------------------------------------------------------------
+1) Table 레코드(row) 입력 : Insert
+
+=> insert into 테이블명[(필드이름1, 필드이름2....)]  values (data1,data2...)
+=> insert into member(name, email, addr) values ('magic','magic@m.com','서울');
+     insert into member  values ('magic','magic@m.com','서울');
+
+----------------------------------------------------------------------------------------
+2) Table 레코드(row) 수정 : Update문 (데이터의 필드값변경)
+
+=> update 테이블명 set 필드이름1=data1,필드이름2=data2 ..    [where 조건문]
+
+	=> person Test
+	update person set gender='A' ;  // 몽땅 수정됨
+	-> pKey 도 수정 가능 (무결성원칙 적용)
+  
+	=> member lev 가 'D' member의 몸무게를 모두 90.5 로 수정하기. 
+		update member set weight=90.5 where lev='D' ; 
+	=> member lev 가 'D' member 중 name이  '신' 으로 끝나는 member의  몸무게를 모두 300으로 수정하기. 
+		update member set weight=300 where lev='D' and name like '%신'; 
+
+----------------------------------------------------------------------------------------
+3) Table 레코드(row) 삭제 : : delete문 (레코드, row 삭제)   
+
+=> delete from 테이블명 [where 조건문]
+
+	=> delete from mystu ;  // 매우주의 해야함
+	    delete from tb1B where age=40;
+
+	=> delete from member ;  // 몽땅 삭제됨
+
+
+** 수정, 삭제 시에 where 조건 없으면 모든 데이터에 적용됨. (주의)
+
+------------------------------------------------------------------------------------------
+====================================================
+*** 실습
+** Test1. ForeignKey 설정되어있지 않은경우
+=> Insert ( student 에 jo Table 에 없는 조 입력 )
+	insert into student(sname, age, info, jno) values("홍길동",100,"insert Test",9) ;
+	select * from student; 
+
+=> Start Transaction;
+
+=> Update ( jo Parent Table : jno_p.key , jname,.... )  
+	update jo set jno=10 , jname="Test Test" where jno=1;  // OK
+	update jo set jname="Test Test" ;  // 모두 수정됨
+	select * from jo;
+
+=> Delete ( jo Parent Table delete ) 
+	delete from jo where jno=3 ;  // OK
+	delete from jo;  // 모두 삭제됨 ( truncate 와 차이점 : Transaction 적용안됨 )
+
+** Test2. ForeignKey 설정되어있는 경우
+=> Insert ( student2 에 jo Table 에 없는 조 입력 )
+	insert into student2(sname, age, info, jno) values("홍길동",100,"insert Test",9) ;
+	select * from student2; 
+	: ERROR 1452 (23000): Cannot add or update a child row: a foreign key constraint fails...
+
+=> Update ( jo2 Parent Table : jno_p.key , jname,.... )  
+	update jo2 set jno=10 , jname="Test Test" where jno=1;  
+	: ERROR 1451 (23000): Cannot delete or update a parent row: a foreign key constraint fails
+	: 수정하려면 -> jo2 Table에  jno=10 insert , student2 의 jno 를 10 으로 수정 후,  jo2 Table에  jno=1 delete
+	
+	조원이 없는 7조 입력후, 수정 Test
+	insert into jo2 values(7, 11, "new Insert","test Test");
+	select * from jo2;
+	update jo2 set jno=77 where jno=7 ;   // Child Data 가 없으면 수정 가능
+
+=> Delete ( jo2 Parent Table delete ) 
+	delete from jo2 where jno=3 ; 
+	: ERROR 1451 (23000): Cannot delete or update a parent row: a foreign key constraint fails ...
+	delete from jo2 where jno=77 ;    // Child Data 가 없으면 삭제 가능
+
+** Test2. ForeignKey 설정, Cascade 설정 되어있는 경우 
+
+=> Insert ( student3 에 jo Table 에 없는 조 입력 )
+	insert into student3(sname, age, info, jno) values("홍길동",100,"insert Test",9) ;
+	select * from student3; 
+	: ERROR 1452 (23000): Cannot add or update a child row: a foreign key constraint fails...
+
+=> Update ( jo3 Parent Table : jno_p.key , jname,.... )  
+	update jo3 set jno=10 , jname="Test Test" where jno=1;  // OK, student3 의 1조는 10조 로 변경되어야함
+	select * from jo3;
+	select * from student3 ;
+
+=> Delete ( jo3 Parent Table delete -> Child 에도 자동적용 ) 
+	delete from jo3 where jno=3 ;  //  OK, student3 의 3조는 삭제 되어야함
+	 
+=> Rollback;  // Test 전으로 모두 되돌림
+-------------------------------------------------------------------------------------------
+=> 	member table 과 동일한 구조와 데이터를 가지는 mymember table 만들기 
+   	- id primary key 부여하기,
+	- 컬럼 varchar2(20) addr 추가 하면서 기본값은 '성남시 분당구' 일괄 입력
+
+	=> create table mymember as select * from member; 
+	     select * from mymember ;
+	=> alter table mymember add primary key(id) ;
+	=> alter table mymember add addr varchar2(20) default '성남시 분당구';
+
+------------------------------------------------------------------------------------------
+====================================================
+4) SELECT  질의문(Query:DML) - Table에 입력된 자료 확인 
+
+** select문(테이블의 레코드 검색)
+
+    select 필드리스트 
+    from 테이블명 
+    [where 조건] 
+    [group by 필드리스트]
+    [having 조건 : 그룹함수에 조건 적용시] 
+    [order by 필드리스트 [asc | desc]];
+    예) 
+	select * from member where addr like '%서울%'
+
+	SELECT  jno, count(*), sum(age), avg(age), max(age), min(age)
+	FROM student 
+	Group By jno 
+	Order By sum(age) desc,  jno asc ;
+
+------------------------------------------------------------------------------------------
+** alias (별명) 사용하기 
+
+-> table, field : 컬럼명, 테이블 에 적용가능
+	lev grade ( lev as grade )
+	select id, lev as 등급 from mymember  ;
+	select id, lev 등급, birthd BirthDay from mymember  ;
+	 
+	=> select name || '의 아이디' , id from mymember;  
+		-> || : Oracle 문자열 연결 연산자
+		-> || : MySql OR 연산자 
+	=> mySql : select Concat(id, ' 의 이름') ID, name from student;
+------------------------------------------------------------------------------------------
+
+** 복습
+1) student , jno 별로 통계 ( 인원수, point 의 총합, 평균, 가장큰값, 가장작은값 )	
+
+2) 1) + 조건추가 , student 들중 age 26 이상 을 대상으로 한다.
+
+3) 2) + 조건추가 조별인원수가 2 이상만 출력한다.
+
+	
+------------------------------------------------------------------------------------------
+=> 비교 test  (EXISTS 사용한 경우와 사용하지않은 경우 비교)
+	
+	-> dogkind 테이블에서 해당하는 강아지가 존재하는  kindcode 만 출력하기
+	select kindcode, kindname, note
+	from dogkind k 
+	WHERE EXISTS(select kindcode from dog d where k.kindcode= d.kindcode) ;
+	
+	-> exists 사용하지않은 경우 비교 : DOG에 존재하는 만큼 모두 출력
+	   ( d.dogno 또는 d.name 을 추가하고 확인해본다. )	
+	select K.kindcode, kindname, note, D.NAME
+	from dogkind k, dog d 
+	WHERE k.kindcode= d.kindcode ;
+
+	-----------------------------------
+ 	-> 자료확인 
+	select * from member; 
+	select * from board;
+	
+	board 에 작성한 글이 있는 회원 만 출력하기
+	select id, name from member m where exists(select id from board b where m.id=b.id);
+	=> member, board 에 모두 존재하는 id 만 출력
+
+	select m.id, name from member m, board b where m.id=b.id;
+	=> member 와 board 에 id 가 일치하면 모두 출력
+                  ( 만약 일치하는 id가 여러개면 모두 출력 
+                    즉, board 에 banana 가 쓴글이 3개면 banana 는 3번 모두 출력됨 )
+	
+	insert into board values(6,'title','banana','Test test',sysdate,0);
+	insert into board values(7,'title','banana','Test test',sysdate,0);
+	insert into board values(8,'title','banana','Test test',sysdate,0);
+
+=============================================
+
+** 산술 연산자 적용
+=> student 에서 age * jno 를 point 로 지급한다고 가정하고 출력하기
+	select id, name, age, jno, (age*jno) point from student;
+	select id, name, age, jno, (age*jno) Vpoint, point+(age*jno) Point from student;
+	update student set point=point+(age*jno) ;
+	select * from student;
+	select id, name, age, jno, point/12 from student;
+
+=>  앨리어스 사용 주의
+	select snum, sname, age, jno, (age*jno) point, point*100/6  from student;  // Error
+	select snum, sname, age, jno, (age*jno) point from student where point > 100; // Error
+	select snum, sname, age, jno, (age*jno) point from student where (age*jno) > 100;
+
+--------------------------------------------------------------
+** Group 함수적용
+
+=> 여러 row 들에 대한 column별 count, avg, sum, min, max 
+
+=> mymember 의 weight 의 count, sum, avg, min, max
+	select count(*), sum(weight), avg(weight), min(weight), max(weight) from mymember ;
+
+=> count(컬럼명) : 해당 컬럼에 값이 있는 row 의 갯수, 
+=> count(*) : 모든 row 의 갯수
+	- id coffee 의 point값을 null 로 수정 후 Test
+	update mymember set point=null where id='coffee' ;
+	select count(*), count(point) from mymember ;
+	---------- ------------
+	 COUNT(*) COUNT(POINT)
+	---------- ------------
+	        30           29
+
+=> student 의 "홍길동"의 info 를 null 로 수정후 비교하기
+	update student set info=null where snum=24;
+	select * from student;
+
+	select count(*), count(info) from student ; 
+	select count(*), count(age) from student ; 
+
+=============================
+*** group 별로 함수 적용하기
+=> select 절에서 group 대상인 컬럼과 그룹함수만 사용가능  (Oracle)
+=> select 절에서 group 대상 아닌 컬럼 사용가능  (MySql : 맥은 오류)
+=============================
+
+=> mymember 에서 lev 별로 인원수, point , weight 합계, 평균 출력하기
+
+	select lev, count(*), sum(point), avg(point), sum(weight), avg(weight) 
+	from mymember
+    	group by lev order by lev ;
+
+    select lev, name, count(*), sum(point), avg(point), sum(weight), avg(weight) from mymember
+    group by lev order by lev ; 
+    // MySql -> 허용 ( 그룹내의 첫 Data 의 값을 가져옴 )
+    // ORA-00979: not a GROUP BY expression
+
+=> 조건 추가 1) 그룹함수로 조건을 주는경우
+	-> having 사용해야함 (where 사용시 오류)
+	-> count(*) 결과가  1 보다 큰 경우에만 출력하기
+	
+    select lev, count(*), sum(point), avg(point), sum(weight), avg(weight)
+    from mymember
+    GROUP BY lev 
+    HAVING sum(point)>5000 order by lev;      
+
+   -> 조건추가 2) : lev < 'D'
+   select lev, count(*), sum(point), avg(point), sum(weight), avg(weight)
+    from mymember
+    where lev < 'D'	
+    GROUP BY lev 
+    HAVING sum(point)>5000 order by lev;  
+
+=> 조건 추가 2) 그룹함수가 아닌 컬럼으로 조건을 주는경우
+	-> where 사용해야함 ( having 사용시 오류)
+	-> point 가 500 보다 큰 member 만 대상으로한다
+  
+    select lev, count(*), sum(point), avg(point), sum(weight), avg(weight) from mymember
+    where point > 500 group by lev having count(*) >1 order by lev ;
+---------------------------------------------------------------------
+** 다양한 실습
+=> select lev, count(*), sum(point), avg(point), sum(weight), avg(weight) from mymember 
+	 group by lev  having ( count(*) >1 ) and ( id like '%a%' )   order by lev ;   
+	// ORA-00979: not a GROUP BY expression 
+	// having 절에서는 그룹핑된 값 (그룹함수) 만 조건으로 사용가능
+
+=> select lev, count(*), sum(point), avg(point), sum(weight), avg(weight) from mymember
+	where id like '%a%'        
+	group by lev  having ( count(*) >1 ) 
+	order by lev ;  
+
+=> 조건변경 : lev 가 'A' 가 아닌경우 만 적용 (Not , != , <> )
+    select lev, count(*), sum(point), avg(point), sum(weight), avg(weight) from mymember
+	where NOT lev ='A'        
+	group by lev  having ( count(*) >1 ) 
+	order by lev ;
+---------------------------------------------------------------------
+============================================================
+*** 그룹함수 활용 (비교해보기) 
+
+=> point 가 가장 큰 student 출력하기
+	1) select id, name, point from student where point = 우리반에서 point 의 최대값
+	-> 우리반에서 point 의 최대값
+	2) select max(point) from student;
+	-> 1) + 2)
+	select id, name, point from student where point = (select max(point) from student) ;
+	select id, name, point from student where point = (select min(point) from student) ;
+	
+=> age 가 가장 어린 학생	
+	select id, name, age from student where age = (select min(age) from student) ;
+
+=> sub_query :   ( 엄상호 학생과 동일한 조원 목록출력 )
+	select id, name, jno from student where jno=?  (  엄상호 학생의 조번호 )
+	select id, name, jno from student where jno=(select jno from student where name="엄상호");
+
+select id, name, point from mymember where point = (select max(point) from mymember);
+select id, name, point from mymember where EXISTS (select max(point) from mymember);
+
+=> 질문 ( m1: id,name  m2: id, point, weight )
+	-> point 값이 가장큰 맴버 출력
+	-> m1 기준
+	select m1.id, name, m2.point 
+	from m1, m2 
+	where (m1.id = m2.id) AND
+	        (m2.point=(select max(point) from m2));		
+ 
+============================================================
+
+** Concatenation (연결) 연산자  ||  (Oracle)
+=> SQL 구문 에서는 문자열간의 + 연산 허용하지 않음
+=> Concat(name, '의 아이디')   
+
+	-> || : Oracle 문자열 연결 연산자
+	-> || : MySql OR 연산자 
+
+=> student Table 에서  name (은)는  jno 조 입니다.
+	select  Concat(name, ' (은)는'), Concat(jno, ' 조 입니다.') from student;
+
+=> student Table 에서  sname 학생의 번호는 ~~~번 입니다 . 
+
+	select  Concat(sname, ' 학생의 번호는 '), Concat(snum, '번 입니다 . ')  from student ;
+	select  sname + ' 학생의 번호는 ', snum +'번 입니다 . '  from student ; 
+	//  오류는 없지만, 산술연산 결과를 출력함  (산술연산결과가 없으면 0 출력) 
+	select  sname || ' 학생의 번호는 ', snum || '번 입니다 . '  from student ; 
+	//  오류는 없지만, 내부적인 연산 결과를 출력함  ( 0 또는 1 등이 출력) 
+
+=> student 에서 snum, sname, age 세 , info, jno 조  를 출력하세요.
+	select snum, sname, concat(age, " 세 ") age, info, concat(jno, " 조 ") jno from student;
+
+=> lev 'A'  만 name 씨의 id 는 ‘banana’ 입니다.    출력되도록 해 보세요 ~~ 
+	select lev,  Concat(name, ' 씨의 id 는 ') Name, Concat(id, ' 입니다.') ID
+	from mymember
+	where lev='A' ;
+	
+------------------------------------------------------------------------------
+===============================================
+** 다양한 where 조건
+------------------------------------------------------------------------------
+
+*  조건주기
+=> 관계연산자(>, <, >=, <=, =, !=) , 집합연산자 (and , or)등	
+
+* AND
+-> student 에서 snum 15 부터 20 까지 출력하기
+	select * from student where  snum>=15   AND  snum<=20 ;
+
+	select * from student where  15 <= snum <= 20 ;  // 허용안됨
+	select * from student where  snum  Between 15  AND  20 ;   // 편리한 함수
+
+* OR
+-> student 에서 snum 15 미만  20 초과 출력하기	
+	select * from student where  snum < 15   OR  snum > 20 ;
+	select * from student where  snum < 15   ||  snum > 20 ;
+  
+* NOT => not , <> , != 
+=> jno 가 9 아닌 자료 출력
+	select *  from student where jno != 9 ;
+	select *  from student where jno <> 9 ;
+	select *  from student where jno not = 9 ; // Error
+	select *  from student where jno not 9 ;    // Error
+	select *  from student where not  jno=9 ; // OK
+
+    info 가 "학생" 아니면 모두 출력
+	select *  from student where info != "학생" ;
+	select *  from student where info <> "학생" ;
+
+------------------------------------------------------------------------------
+*** is NULL / is Not NULL
+	
+	-> student 에서 point 가 NULL 인자료 출력
+	select * from student where point = null ; 
+	// Empty set (0.00 sec)  : error 발생안됨 주의
+	select * from student where point is null ;   // NULL , null
+
+	-> student 에서 info 가 Not NULL 인자료 출력
+	select * from student where info != null ;  
+	// Empty set (0.00 sec)  : error 발생안됨 주의
+	select * from student where info is Not NULL ;  // NULL , null
+------------------------------------------------------------------------------
+ 
+* BETWEEN  100 AND 200  
+=> mymember 에서 weight  45 부터 70 까지 출력하기  ( 45이상 70이하 )
+	select * from mymember where weight between 45 and 70 ;
+
+=> "김민성" ~ "박규민"
+	select * from student where name BETWEEN "김민성" AND "박규민" order by name;
+=> jjang ~ nihil0
+	select * from student where id BETWEEN "jjang" AND "nihil0" order by id;
+
+=> age 가 20대인 학생만 출력  ( 20 이상 ~ 29 까지 )
+	select * from student  where age>=20 and age<=29 ;
+	select * from student  where  age  BETWEEN  20 AND 29;
+
+* IN ( , , )
+=> select * from student where jno IN(1, 3, 5) order by jno ;
+	select * from student where jno=1 || jno=3 or jno=5 order by jno;
+
+=> select * from student where info IN("불로소득", "백수", "로또") ; 
+
+------------------------------------------------------------------------------
+
+*  LIKE : 퍼지검색
+=>  % : 임의의 문자열 (없음포함)
+=>   _ : 임의의 한글자, 한글도 한글자로 인정 
+
+	-> name 중에 2번째 글자가 "승" 인 자료 검색
+	select * from student where name  =  "_승%" ;    // Empty set (0.00 sec)
+	select * from student where name  LIKE  "_승%" ;
+	-> "정" 씨만 출력하기
+	select * from student where name = "정%" ;  // 동일자료
+	select * from student where name  LIKE "김%" ;
+	-> info 에 "개발" 이 포함 되어있으면 무조건 출력
+	select * from student where info  LIKE "%개발%" ;
+	select * from student where info  LIKE "%백수%" ;
+	select * from student where info  LIKE "%로또%" ;
+
+=> 응용
+	-> info 에 "개발", "백수", "로또"  가 포함 되어있으면 출력
+	select * from student where info IN("%개발%", "%백수%", "%로또%") ;  // Empty....
+	select * from student where info Like "%개발%" || info Like "%백수%" || info Like "%로또%" ;		
+
+	-> 성이 "김", "이", "박" 인 학생 출력
+	select * from student where name IN("김%", "이%", "박%") ;	
+	// IN 은 동질성 비교를 하기 때문에 적합하지않음
+	select * from student where name LIKE "김%"  ||  sname LIKE "이%"  || sname LIKE "박%" ;	
+	 
+=> NOT 적용하기
+	->  성이 "김" 아닌 학생 출력	
+	select * from student where  NOT name LIKE "김%" ;  // OK	
+	select * from student where  name NOT LIKE "이%" ;  // OK	
+	select * from student where  name LIKE  NOT "이%" ; 
+	: ERROR 1064 (42000): You have an error in your SQL syntax......
+	
+	-> id 의 마지막 알파벳이 'j' 인자료 검색
+	select * from student where id like '%j' ;
+
+=> 복합구문
+	-> student 에서 snum 가 1번부터 10번 범위에서 info 에  '개발' 이 포함된 자료 검색하기
+	select * from student where  (snum Between 1 and 10)  AND ( info LIKE "%개발%" ) ;
+
+-----------------------------------------------------------------------------------
+================================================
+** 문자열 + 연산
+=> CONCAT('문자열', '문자열', ... , '문자열') 
+	CONCAT('%', key, '%')
+=> 문자열들을 합친다.
+	-> student id, name, 만 (age-1) 세  출력하기
+	select   id, name,  CONCAT('만 ',(age-1),'세') 나이  from student;
+
+*** 유용한 함수 FIND_IN_SET 
+=> FIND_IN_SET('value', 컬럼명) : 컬럼에 'value' 가 있으면 선택
+=> 원하는 값이 해당 ROW 의 컬럼에 있는지 여부를 확인할 수 있다.
+=> 배열 Type Data 에 유용하게 적용가능 ( 예, belts = 'purple,green,blue' )
+ 
+=> 예제
+CREATE TABLE IF NOT EXISTS divisions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(25) NOT NULL,
+    belts VARCHAR(200) NOT NULL
+);
+ 
+=> 
+INSERT INTO divisions(name,belts)
+VALUES ('O-1','white,yellow,orange'),
+    ('O-2','purple,green,blue'),
+    ('O-3','brown,red,black'),
+    ('O-4','white,yellow,orange'),
+    ('O-5','purple,green,blue'),
+    ('O-6','brown,red'),
+    ('O-7','black'),
+    ('O-8','white,yellow,orange'),
+    ('O-9','purple,green,blue'),
+    ('O-10','brown,red');
+
+=> 입력확인 : SELECT * FROM divisions;
+=> 예제
+	: red 가 있는 row만 출력하기
+	  SELECT name, belts from divisions where FIND_IN_SET('red', belts);
+
+	-> 비교 Like
+	SELECT name, belts from divisions where belts like '%red%' ;
+
+
+=> 반복문에 FIND_IN_SET 적용하기
+ 	: check Box 와 keyword 를 이용한 검색 & Paging
+      	
+<select id="pcGameList" resultType="vo.GameVO">
+        select game_img, game_name 
+        from pcgame 
+        where (game_number > 0)
+        <if test="keyword != null">
+             <bind name="keyVal" value="'%' + keyword + '%'"/>
+             and game_name like #{keyVal}
+        </if>
+        <if test="check != null">
+	 <foreach collection="check" item="it" open=" and ( " close=")" separator="or ">
+		FIND_IN_SET(#{it}, category) 
+              </foreach> 
+         </if>
+          order by category asc, game_name asc
+          limit #{sno}, #{rowsPerPage}
+</select>
+
+
+------------------------------------------------------------------------------
+
+*** 표시범위 제한 (only MySQL) 과 Rownum
+=> 출력 row 의 갯수 선택 가능
+	-> select * from student  LIMIT 3 ;
+	-> select * from student  LIMIT 2, 3 ;  
+	//   2개 제외하고 3번째부터 3개 출력  ( paging 기능처리에 매우 유용)
+	
+	**  select * from student order by name desc  ;
+	-> select * from student order by name desc LIMIT 3 ;
+	-> select * from student order by name desc LIMIT 3, 3  ;
+
+=> Rownum (Oracle 기능)
+	-> select id, name, Rownum from mymember ;  // Oracle
+	-> MySql 지원하지 않음
+	  - 변수를 만들어 사용가능
+	  - from 절에서 초기화 후 사용가능
+		SELECT @ROWNUM:=@ROWNUM+1 AS rowNum
+		FROM 테이블명, (SELECT @ROWNUM:=0) AS R
+ 
+	  - where 절에서 초기화 후 사용가능 
+		SELECT id, name, @ROWNUM:=@ROWNUM+1 AS rowNum
+		FROM mymember, (SELECT @ROWNUM:=0) AS R ;
+
+	  - 개수 제한하기 : LIMIT 사용
+		SELECT *
+		FROM(SELECT 컬럼명 ,@ROWNUM:=@ROWNUM+1 as rowNum
+		FROM 테이블명 ,(SELECT @ROWNUM:=0) AS R ) T
+		LIMIT 0,14 ;
+ 
+------------------------------------------------------------------------------
+------------------------------------------------------------------------------
+	
+*** 중복된 데이터 제외  DISTINCT 
+=> 결과 row 의 동일성 확인함 ( select 바로 뒤에 위치, 이어 지정된 컬럼들의 동일성 확인 )
+=> 결과적으로 group by 와 유사 
+
+=> 아래 3구문을 비교해 보세요 ~~	
+	
+	select jno, name from student order by jno ;
+	select DISTINCT jno, name from student order by jno ;  //  jno + sname 으로 중복 확인
+	select jno, name from student order by jno ;
+	select jno from student order by jno ;
+	select DISTINCT jno from student order by jno ;   //  jno 로만 중복 확인
+
+	select name, DISTINCT jno from student order by jno ;  
+	: ERROR 1064 (42000): You have an error in your SQL syntax; check the manual....
+	-> 실습 ( jno, age 적용 )
+	select jno, age from student order by jno, age ;  // 23 rows
+	select DISTINCT jno, age from student order by jno, age ;  // 20 rows
+	select DISTINCT jno, age from student order by jno;  // 20 rows
+	->  age 만 적용
+	select DISTINCT age from student;
+
+------------------------------------------------------------------------------
+------------------------------------------------------------------------------
+
+*** 순서 정렬 
+	( default : ascending )
+	select id, name, point from mymember order by id ;
+	select id, name, point from mymember order by id desc ;
+
+* 오름차순 
+	=> 복수 컬럼 적용가능  
+	-> asc 정렬시 null 값이 가장 먼저 나옴 ( Oracle 은 제일 뒤에 출력)
+	  student,  info asc 으로 출력하기
+	select * from student order by info asc;	 
+   
+	-> mymember 1순위 lev,   2순위  id  desc 순
+	select lev, id, name from mymember order by lev asc, id desc ;
+	(= select lev, id, name from mymember order by lev, id desc ; )
+
+* 내림차순 
+	=>  board 의 seq, id, title 을 id 의 오름차순, seq 내림차순
+	select seq, id, title from board order by id, seq DESC;
+-----------------------------------------------------
+
+* where 조건과 같이 사용가능
+	-> age 가 20 대 아닌학생들만 age desc 출력하기
+	select * from student where   NOT age between 20 and 29 order by age desc ;	 
+
+* group by 와 정렬
+
+	-> jno 별로 count(*), sum(age), avg(age), max(age), min(age)  인원수 desc, max(age) desc
+	select  jno, count(*), sum(age), avg(age), max(age), min(age) from student
+	Group by jno 
+	order by count(*) desc, max(age) desc;
+	
+	-> + 조건추가  sum(age) 가 100 초과하는 경우만 
+	select  jno, count(*), sum(age), avg(age), max(age), min(age) from student
+	Group by jno 
+	Having sum(age)  > 100
+	order by count(*) desc, max(age) desc;
+
+	-> + 조건추가 age 25 이상 을 대상으로한다
+	select  jno, count(*), sum(age), avg(age), max(age), min(age) from student
+	where age >= 25
+	Group by jno 
+	Having sum(age)  > 100
+	order by count(*) desc, max(age) desc;
+
+* group by + join
+	
+	-> + 출력문에 jname 추가하기 
+	select  s.jno, jname, count(*), sum(age), avg(age), max(age), min(age) 
+	from student s, jo j
+	where age>=25  AND s.jno = j.jno 
+	Group by jno 
+	Having sum(age)  > 100
+	order by count(*) desc, max(age) desc;
+	 ( ** Oracle 은  group by jno , jname -> select 구문에 사용가능 )
+
+* Sub Query 문 이용 
+=> select 구문내에 select 구문을 포함하는것  
+=> jo Table 에서 조장이름 출력하기
+	-> 1)  Join
+	select j.jno, jname, note, chief, s.sname from jo j, student s where j.chief = s.snum ;
+
+	-> 2) Sub Query 
+	select jno, jname, note, chief, 
+	( select name from student where id=jo.chief )  조장이름
+	from jo ;
+	    
+	-> 실습
+	student 에서  name="이해선" 과 같은조원 출력하기 (id, name, jno)
+	select id, name, jno from student where jno=(select jno from student where name="이해선");
+
+=================================================
