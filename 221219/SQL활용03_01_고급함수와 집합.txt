@@ -1,0 +1,98 @@
+=================================================
+=================================================
+***  능력단위 : 22001020413_16v3   SQL활용
+    ** 능력단위요소
+      => 2001020413_16v3.1 기본 SQL 작성하기
+      => 2001020413_16v3.2 고급 SQL 작성하기
+
+=================================================
+2001020413_16v3.2 고급 SQL 작성하기
+=================================================
+
+*** Group by 관련 명령  :  SQLD 준비시 필요함
+
+1)  group by 만 적용한 경우
+
+	select jno, age, count(*), avg(age) from student group by jno,age order by jno, age;
+	select age, jno, count(*), avg(age) from student group by age,jno order by age, jno;
+
+2) ROLLUP
+=> jno 별로 소계와  전체합계  출력됨.
+
+	select jno, age, count(*), avg(age) from student group by jno,age WITH ROLLUP ;
+	select age, jno, count(*), avg(age) from student group by age,jno WITH ROLLUP ;                 
+	select age, jno,count(*), avg(age) from student group by age WITH ROLLUP ;
+
+
+
+3) CUBE
+=> 전체합계,  name 별 합계, lev 별 합계, lev와 name 별 합계 출력됨 
+	select jno, age , sum(age) from student group by CUBE(jno, age) ;
+
+ SQL> select lev, name , sum(point) from mymember group by CUBE(lev, name);
+
+
+4) Grouping Sets 
+=> lev별 합계  ,  name별 합계  출력됨.
+
+SQL> select lev, name , sum(point) from mymember group by Grouping Sets(lev, name);
+
+LE NAME       SUM(POINT)
+-- ---------- ----------
+D                   4500
+A                   3000
+B                  11000
+C                  20000
+   이순신           4500
+   김유신          13500
+   김그린            500
+   스티브          20000
+
+8 rows selected.
+===================================================================
+===================================================================
+
+*** 집합 연산자 
+
+1. UNION : 중복제거 
+=> 여러 SQL문의 결과에 대한 합집합(중복 행 제거함.)
+=> select 의 컬럼갯수가 같아야 함.
+
+	select seq, id from board UNION select seq, id from board2 ;
+	-> Test data 입력
+	insert into board2 values (4,'title','apple','testtest',sysdate,0,4,0,0) ;
+
+	-> select * from member ; 
+	    select * from mymember;
+	select id, name from member UNION
+   	select id, birthd from mymember;
+
+	select id, name from member UNION
+   	select id, name, birthd from mymember;
+	-> ORA-01789: query block has incorrect number of result columns
+
+	select id, name from member UNION
+   	select id, name from mymember;
+
+	select id, name from member UNION
+   	select id, title from board;
+
+2. UNION ALL : 중복포함
+=> 여러 SQL문의 결과에 대한 합집합(중복 행 제거하지 않음.)
+	select seq, id from board UNION ALL select seq, id from board2 ;
+	
+	select id, name from member UNION ALL
+  	select id, name from mymember;
+
+3. INTERSECT : 교집합
+=> 여러 SQL문의 결과에 대한 교집합(중복 행 제거함.)
+	select seq, id from board INTERSECT select seq, id from board2 ;
+	select id, name from member INTERSECT select id, name from mymember;
+
+4. MINUS : 차집합
+=> 앞의 SQL문을 출력 하면서 뒤의 SQL문의 결과와 동일자료는 제외하고 출력
+
+	select seq, id from board MINUS select seq, id from board2 ;
+    	select id, name from member MINUS select id, name from mymember;
+ 
+

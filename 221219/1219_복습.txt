@@ -1,0 +1,35 @@
+** student , age 가 평균 이상인 학생 출력하기 ( id, name, age )
+select id, name, age from student where age >= (select avg(age) from student) ;
+
+** 조별 통계
+select jno, count(*), sum(age), avg(age), sum(age), max(age), min(age) from student group by jno;
+
+-> 조별 평균 나이가 27 초과하는 조만 출력.
+select jno, count(*), sum(age), avg(age), sum(age), max(age), min(age) from student group by jno 
+having avg(age) > 27;
+
+-> 조별 평균 나이가 반평균 나이 초과하는 조만 출력.
+select jno, count(*), sum(age), avg(age), sum(age), max(age), min(age) from student group by jno
+having avg(age) > 반평균;
+having avg(age) > (select avg(age) from student);
+
+-> id에 's' 또는 'S'가 포함된 학생들 대상으로 조별 평균 나이 27을 초과하는 조만 출력.
+select jno, count(*), sum(age), avg(age), sum(age), max(age), min(age) from student 
+where id like '%s%'
+group by jno 
+having avg(age) > 27;
+
+-> id에 's' 또는 'S'가 포함된 학생들 대상으로 조별 평균 나이 27을 초과하는 조만 출력. + jno 홀수 인 조만 출력.
+
+답1) where절에 조건 추가
+select jno, count(*), sum(age), avg(age), sum(age), max(age), min(age) from student 
+where id like '%s%' and mod(jno,2)=1
+group by jno 
+having avg(age) > 27;
+
+답2) having절에 조건 추가.
+select jno, count(*), sum(age), avg(age), sum(age), max(age), min(age) from student 
+where id like '%s%'
+group by jno 
+having avg(age) > 27 and mod(jno,2)=1;
+
