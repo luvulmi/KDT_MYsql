@@ -1,0 +1,218 @@
+=====================================================
+=================================================
+***  능력단위 : 22001020413_16v3   SQL활용
+    ** 능력단위요소
+      => 2001020413_16v3.1 기본 SQL 작성하기
+      => 2001020413_16v3.2 고급 SQL 작성하기
+
+=================================================
+2001020413_16v3.2 고급 SQL 작성하기
+=================================================
+*** Mysql 함수 구분
+
+=> 문자, 숫자, 날짜, 형변환, 일반  
+=> 주요 함수표 : https://blog.naver.com/kimtahwn/222697080152	
+
+*** 주요 함수 ***
+
+** DUAL Table
+=> Oracle 의 경우 규칙 :  select * from table명 ; 
+     형식상 사용하도록 공 table 명을 제공해줌 : dual 
+	-> select  24*60*365 from dual ;
+
+* 1년은 몇분 일까요 ?
+	-> select  24*60*365  ;
+
+1) 숫자
+	: ABS, FLOOR , ROUND , TRUNCATE , MOD
+
+  => ABS 절대값 : select -10, ABS(-10)  ;
+	-> select name, age, point, (age-point),  ABS(age-point) from student;
+
+  => FLOOR 소수이하 내림:
+	select 34.56789, FLOOR(34.56789) ;
+	select FLOOR(-34.56789), FLOOR(-34.1)  ;  -> 모두 -35
+
+ => TRUNCATE(n, p)  :  소수이하 p 의 자리에서 내림
+	select 34.56789, Truncate(34.56789, 3) ;  // 34.567
+	select Truncate(-34.56789, 3), Truncate(-34.1, 3) ;   // -34.567 , -34.1
+
+ => ROUND 반올림 또는 버림으로 정수 출력:
+     ROUND(n, p) : p 가 양수 이면 소숫점이하,  p 가 음수 이면 소숫점이상에서 반올림 또는 버림
+	-> select 34.56789, ROUND(34.56789), ROUND(34.123) ;  // 35, 34
+   	    select -34.56789, ROUND(-34.56789), ROUND(-34.123) ;  // -35, -34
+
+	-> select 1277.56789, ROUND(1477.56789, 3) ;  // 1477.568 
+    	    select 1277.56789, ROUND(1577.56789, -3) ;  //  2000
+ 	    select 1277.56789, ROUND(1277.56789, -3) ;  //  1000
+	    select 1277.56789, ROUND(1277.56789, -2) ;  //   1300
+	    select 1277.56789, ROUND(1277.56789, 2) ;  // 1277.57
+
+	-> select ROUND(1477.56789, 3), ROUND(1577.56789, -3), ROUND(1277.56789, -3), ROUND(1277.56789, -2), ROUND(1277.56789, 2) ;
+  
+  => CEIL : 무조건올림 정수 ( 소수이하 값이 있는 경우 )
+	->  SELECT CEIL(10.0), CEIL(10.0423), CEIL(10.789) ;
+		select name, point, age, (point/age), ceil(point/age), round(point/age) from student;
+
+  => MOD 나머지 :
+	-> select MOD(27,2) , MOD(27,3)  ;   // 1 ,  0
+
+	-> student 에서 age 가 3의 배수인 학생만 출력하기	
+		select id, name, age from student where MOD(age,3) = 0 order by age;
+
+	-> student 에서 point 의 정수부분이 짝수인 학생만 출력하기
+		select id, name, age, point,  FLOOR(point)  from student where  MOD(FLOOR(point),2) = 0 ;
+
+	-> board 에서 seq 가 홀수인 글의 seq, title, id 만 출력 하기
+	select seq, title, id from board where MOD(seq,2)=1 ;  // 홀수
+	select seq, title, id from board where MOD(seq,2)=0 ;  // 짝수
+
+-----------------------------------------------------------------------------------------------	 
+** 실습 : 
+=> student에 height 컬럼 추가 값은 age*123/jno 
+    	-> 추가전 확인
+	: select snum, sname, age, jno,  (age*123/jno)  height from  student ;
+	-> 컬럼 추가
+	alter table student add height float(7,4) default  (age+123/jno+0.123) ;
+	select * from student;
+
+=> student 에서 point*jno/age 에 FLOOR,  TRUNCATE,  ROUND, CEIL 적용 비교해보기
+	select id, point, jno, age, point*jno/age, FLOOR(point*jno/age) Floor,  TRUNCATE((point*jno/age), 3) Tru,  ROUND(point*jno/age) Round, CEIL(point*jno/age) Ceil from student;
+
+=> 위의 point*jno/age 값을 소수이하 3 자리에서 반올림 2자리까지 출력하기 
+	select id, point, jno, age, point*jno/age, Round(point*jno/age, 2) from student;
+
+-----------------------------------------------------------------------------------------------
+====================================================
+	 
+2) 문자1
+	: UPPER, LOWER, LENGTH(문자열의 길이, Byte), CHAR_LENGTH(문자열의 길이, 글자수)
+
+=> UPPER 대문자로
+	select 'MySql' , UPPER('MySql'), LOWER('MySql'), LENGTH('MySql'), length('마이에스큐엘')  ;
+
+=> LOWER 소문자로
+
+** 실습
+	 
+=> student 에서 id, name 를 모두 소문자로 또는 모두 대문자로 출력 하기
+	select id, Upper(id), Lower(id), Length(id), Upper(name), Lower(name), Length(name) from student;
+
+=> 테이블 데이터를 수정하는 경우
+	update student set id=UPPER(id) where id='banana'  ;
+
+=> select LENGTH('마이에스큐엘'), LENGTH('mysql'), LENGTH('MYSQL')  ;  
+	-> '마이에스큐엘' :  1글자 2byte -> 12
+
+=> select CHAR_LENGTH('마이에스큐엘'), CHAR_LENGTH('mysql'), CHAR_LENGTH('MYSQL')  ;  
+	-> '마이에스큐엘' :  6글자 -> 6	 
+
+=> student 의 id, sname 의  length  출력 하기
+     	select id, length(id), sname, length(sname) from student;
+	-> Table 에 저장된 한글 Data 는 1글자 3byte
+--------------------------------------------------------------------------- 
+
+3) 문자2
+	: SUBSTR(문자대상, 시작위치, 추출갯수) -> 글자 단위
+
+  => 시작위치를 음수사용하면 뒤에서 부터 ~~
+     select SUBSTR('WELCOME TO MySql' , 4, 3), SUBSTR('WELCOME TO MySql' , -4, 3) ;   // COM ,  ySq
+
+     select SUBSTR('WELCOME TO MySql' , 4, 3) ; -> 4번째 부터 3개
+     select SUBSTR('WELCOME TO MySql' , -4, 3) ; -> 뒤에서 4번째 부터 뒤로 3개
+  
+    
+ => birthday : 1999-09-09  에서 12, 01 월의 생일자 출력하기 (substr 이용하기)
+	select  id, name, '1999-12-09'  from student
+	where substr('1999-12-09', 6, 2) = '12' OR substr('1999-01-10', 6, 2) = '01' ;
+
+	-> IN 사용가능	
+     	select id, name, birthday from student where substr(birthday,6, 2) IN('12' , '01', '02') ;  // OK	
+    	 	
+ => student 의 id 의 2번째부터 3개, name 의 두번째 글자, 만 출력하기
+    	select id, substr(id,2,3), name, substr(name,2,1) from student;	 
+
+---------------------------------------------------------------------------
+
+4) 문자3 :  REPLACE(대상문자 , oldString, newString)  
+
+   => select Replace('abcd', 'a', '-xyz-'), Replace('가나다라', '나', '-대한민국-') ;
+	
+   => student 에서 id  's' 를 '그린' 으로 변경한다.
+	select id, REPLACE(id, 's', '그린'), name from student ; 
+
+   => 조건추가 : id에  s 가 포함된 student 만 출력하기
+	select id, REPLACE(id, 's', '그린'), name from student
+	where id LIKE '%s%'  ; 
+
+5) 문자4 : LPAD , RPAD  (왼쪽 오른쪽에 특정 문자를 원하는 자리수만큼 넣기)
+
+   =>  LPAD : 왼쪽에 특정문자를 원하는 자리수만큼 채워서 반환
+         LPAD(원본문자열 , 원하는 자리수, 채울 문자열)
+	-> SELECT LPAD('ABC',10,'#') ;   // 0000000ABC
+ 	
+   =>  RPAD : 오른쪽에 특정문자를 원하는 자리수만큼 채워서 반환
+         RPAD(원본문자열 , 원하는 자리수, 채울 문자열)
+         SELECT RPAD('ABC',10,'#') ;   //  ABC0000000
+ 
+=> student 의 id 를 첫글자만 보이도록 ( 'a****' ) 출력하기
+	RPAD(id의첫글자, id의길이, '*')
+	select snum, id, RPAD(substr(id,1,1), length(id), '*') from student;
+	select snum, sname ,id , replace(id,substr(id,2,10),"**********") from student; // 비교
+
+=> student 의 name 을 마지막 글자만 보이도록 ( '**동' ) 출력하기
+	select name, lpad(substr(name,-1,1),length(name)/3,'*') from student;
+	
+=> 010-1234-1234 :  010-1***-1***  연습 해 보세요 ~~
+-> concat, Rpad, substr
+	select '010-6246-7033',  concat('010-',Rpad(substr('010-6246-7033',5,1) ,4 ,'*' ) , '-' , Rpad(substr('010-6246-7033',10,1) ,4 ,'*' )) Test ;
+-> concat, substr
+	select concat(substr('010-5519-6010',1,5),'***',substr('010-5519-6010',9,2),'***') 전화번호;  // 심승준
+
+
+---------------------------------------------------------------------------
+
+6) 날짜
+	현재 날짜 시간 반환 : sysdate() ,  NOW(), current_timestamp() 
+
+  => SYSDATE()  : 현재 날짜 반환
+	select sysdate() , NOW(), current_timestamp() ;
+	-> now() 사용 권장
+
+	select now() 오늘, now()+1 내일, now()-1 어제 ;  // Mysql 부적절
+	select sysdate() 오늘, sysdate()+1 내일, sysdate()-1 어제  ;  // Mysql  부적절
+
+=> 실습
+	-> student에  birthday  DateTime 컬럼 추가, default NOW(),   		
+	alter table student add birthday  DateTime default NOW() ;	
+	desc student;
+	select * from student;
+
+-----------------------------------------------------------------------------
+===================================================================
+7) 날짜 시간 출력포맷
+
+=> DATE_FORMAT()
+     오라클에서 to_char(sysdate) 형식과 같은 결과를 반환
+
+=>  now() , sysdate() 사용해 현재 시간 24시간 기준 출력 하기
+
+select DATE_FORMAT(now(), '%Y-%m-%d %H:%i:%s') as "now 24",  
+        DATE_FORMAT(now(), '%Y년 %m월 %d일 %H시 %i분 %s초') as "now 24",  	
+        DATE_FORMAT(now(), '%Y%m%d%H%i%s') as "now 24",  
+        DATE_FORMAT(sysdate(), '%Y%m%d%H%i%s') as "sysdate 24";
+
+-> student 의 birthday -년 -월 -일 출력
+	select  id, name, birthday, DATE_FORMAT(birthday, '%Y년 %m월 %d일') 생일 from student;  
+ 
+=> 참고
+	-> SYSDATE() : 함수가 실행되는 시점의 시각을 반환
+	-> NOW() : 하나의 쿼리 단위로 실행되는 시점의 시각을 반환
+	
+	-> 대문자 Y : 연도 4자리값을 반환
+	-> 소문자 y : 연도 2자리값을 반환
+	-> 소문자 m : 12월 까지 단위를 숫자로 표시 (2자리)
+	-> 소문자 d : 일 단위를 숫자로 표시 (2자리)
+	-> 대문자 H : 24 시간 기준으로 시간을 표시 (2자리)
+	-> 소문자 i : 분 단위를 숫자로 표시 (2자리)
+	-> 소문자 s : 초 단위를 숫자로 표시 (2자리)

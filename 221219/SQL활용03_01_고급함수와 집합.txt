@@ -12,30 +12,33 @@
 *** Group by 관련 명령  :  SQLD 준비시 필요함
 
 1)  group by 만 적용한 경우
-
-	select jno, age, count(*), avg(age) from student group by jno,age order by jno, age;
-	select age, jno, count(*), avg(age) from student group by age,jno order by age, jno;
+	-> 1)
+	select jno, age , count(*), avg(age) from student group by jno, age order by jno, age;
+	-> 2)
+	select age, jno , count(*), avg(age) from student group by age, jno order by age, jno;
 
 2) ROLLUP
 => jno 별로 소계와  전체합계  출력됨.
 
-	select jno, age, count(*), avg(age) from student group by jno,age WITH ROLLUP ;
-	select age, jno, count(*), avg(age) from student group by age,jno WITH ROLLUP ;                 
-	select age, jno,count(*), avg(age) from student group by age WITH ROLLUP ;
+	select jno, count(*), avg(age) from student Group By jno With RollUp ;
+	select jno, age , count(*), avg(age) from student Group By jno, age With RollUp;
+
+	select jno, age , sum(age) from student group by jno, age WITH ROLLUP ;
+	select jno, sum(age) from student group by jno WITH ROLLUP ;
 
 
 
-3) CUBE
-=> 전체합계,  name 별 합계, lev 별 합계, lev와 name 별 합계 출력됨 
-	select jno, age , sum(age) from student group by CUBE(jno, age) ;
+3) CUBE (Mysql 없음)
+=> 전체합계,  jno, age 별 합계, jno 와 age 별 합계 출력됨 
+	select jno, age, count(*), avg(age) from student group by  CUBE(jno, age) ;
 
  SQL> select lev, name , sum(point) from mymember group by CUBE(lev, name);
 
 
-4) Grouping Sets 
+4) Grouping Sets  (Mysql 없음)
 => lev별 합계  ,  name별 합계  출력됨.
 
-SQL> select lev, name , sum(point) from mymember group by Grouping Sets(lev, name);
+SQL> select jno, age , count(*), avg(age) from student group by Grouping Sets(lev, name);
 
 LE NAME       SUM(POINT)
 -- ---------- ----------
@@ -57,8 +60,14 @@ C                  20000
 1. UNION : 중복제거 
 => 여러 SQL문의 결과에 대한 합집합(중복 행 제거함.)
 => select 의 컬럼갯수가 같아야 함.
+	-> 동일 컬럼
+	select id, name from student UNION select id, name from studentr ;
+	-> 다른 컬럼 (갯수와 Type 은 일치)
+	select id, name from student UNION select id, info from studentr ;   // OK
+	-> 다른 컬럼, 다른 Type (갯수만 일치)
+	select id, name from student UNION select id, point from studentr ;  // OK
 
-	select seq, id from board UNION select seq, id from board2 ;
+
 	-> Test data 입력
 	insert into board2 values (4,'title','apple','testtest',sysdate,0,4,0,0) ;
 
@@ -79,20 +88,22 @@ C                  20000
 
 2. UNION ALL : 중복포함
 => 여러 SQL문의 결과에 대한 합집합(중복 행 제거하지 않음.)
-	select seq, id from board UNION ALL select seq, id from board2 ;
+	select id, name from student UNION ALL select id, name from studentr ;
 	
 	select id, name from member UNION ALL
   	select id, name from mymember;
 
 3. INTERSECT : 교집합
 => 여러 SQL문의 결과에 대한 교집합(중복 행 제거함.)
-	select seq, id from board INTERSECT select seq, id from board2 ;
-	select id, name from member INTERSECT select id, name from mymember;
 
-4. MINUS : 차집합
+	select id, name from student INTERSECT select id, name from studentr ;
+	select id, name from student INTERSECT select id, info from studentr ; // Empty set (0.00 sec)
+
+4. MINUS : 차집합 
 => 앞의 SQL문을 출력 하면서 뒤의 SQL문의 결과와 동일자료는 제외하고 출력
+=> MySQL/MariaDB에서는 오라클에 있는 MINUS 구문을 사용할 수 없다.
 
-	select seq, id from board MINUS select seq, id from board2 ;
+	select id, name from student MINUS select id, name from studentr ;
     	select id, name from member MINUS select id, name from mymember;
  
 

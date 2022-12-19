@@ -9,9 +9,9 @@
 *** IF
 => IF(condition, value_if_true, value_if_false)
 => 중첩 적용 가능
-	-> select snum, sname, jno, IF(jno=1, '일조', '일조아님') ifTest from student;
-	-> select snum, sname, jno, 
-		IF(jno=1, '일조', IF(jno=2, '이조', IF(jno=3, '삼조', IF(jno=4, '사조', IF(jno=5, '오조', '육조'))))) ifTest 
+	-> select id, name, jno, IF(jno=9,'관리자','일반') ifTest from student;
+	-> select id, name, jno, 
+		IF(jno=1, '일조', IF(jno=2, '이조', IF(jno=3, '삼조', IF(jno=4, '사조', IF(jno=5, '오조', '구조'))))) ifTest 
 		from student;
 
  	-> select id, name, lev, IF(lev='A', '관리자', '일반')  from mymember ;
@@ -22,72 +22,65 @@
 => IFNULL(column_name, value) 
     해당 필드의 값이 NULL 을 반환할 때, 지정한 값으로 대체하여 출력
 => 중첩 적용 가능
-	-> student 의 jno 값이 9조 이상이면 info를 null로 수정
-	    update student set jno=null where jno > 6 ;
+	-> select IFNull(Null, 123) ;
+
+	-> student 의 jno 값이 6 조 이상 이면 info 를 null 로 수정
+	    update student set info=null where jno >= 6 ;
 	    select * from student;
 
-	-> select id, name, jno, IFNULL(jno, '하하하') 이름변경 from student ;
-
---------------------------------------------------------------------------------------
+	-> select id, name, jno, point, IFNULL(point, '하하하') Test from student ;
+	    select id, name, jno, info, IFNULL(info, '관리자 계정') Test from student ;
 
 ---------------------
 ** Case   
 ---------------------
 => 기본형식
-   select  컬럼들,
-      CASE WHEN 조건1 THEN 조건별 값
-              WHEN 조건2 THEN 조건별 값
-              .....
-              ELSE 값 
-      END Test(앨리어스)
-      from student ;
-
-=> IF -> Case로 변경
-	select id,name,jno
-	if(, , if(jno=2, '이조',if(jno=2, '이조', IF(jno=3, '삼조', IF(jno=4, '사조', IF(jno=5, '오조', '육조'))))) ifTest from student;
-
-select id, name, jno,
-	case when jno=1 then '일조'
-	when jno=2 then '이조'
-	when jno=3 then '삼조'
-	when jno=4 then '사조'
-	when jno=5 then '오조'
-	else '구조'
-	end cTest
-	from student;
-
-
-=> student 수정 
-	update student set height=120.55 where height is null and jno=4;
-	-> height 가 null 이고 4조 이면 heihgt = 120.55	
-	-> height 가 null 이고 5조 이면 heihgt = 82.33
-	-> height 가 null 이고 6조 이면 heihgt = 55.78
-	select * from student;
-
-=> student 에서 point 에 따라 grade 구분 'silver', 'gold', 'vip' 로  나누고, point 에는 '점' 붙여 출력
-	-> 구간의 사각지대 존재
-		: 250이하 : 'silver' , 251~300 : 'gold', 301~400 : 'plat', else: Error
-
-	-> 비교 :  실수형에 BETWEEN 을 적용하면 사각지대 발생!!! : 60.1 ~60.99999 까지 제외됨 
-	-> between 적용 
-
-	select  id, name, concat(point, '점') point,
-		CASE WHEN point <= 250 THEN 'silver'
-		        WHEN point  > 250 AND point  <= 287 THEN 'gold'
-		        WHEN point  > 287 AND point  <= 400  THEN 'vip'
-		        ELSE 'error'
-		END grade
+	select  컬럼들,
+		CASE WHEN 조건1 THEN 조건별 값
+		        WHEN 조건2 THEN 조건별 값
+		        .....
+		        ELSE 값 
+		END Test(앨리어스)
 		from student ;
 
+=> IF -> Case 로 변경하기
+
+	select id, name, jno, 
+		Case When jno=1 Then '일조'
+		       When jno=2 Then '이조'	
+		       When jno=3 Then '삼조'	
+		       When jno=4 Then '사조'	
+		       When jno=5 Then '오조'		
+		       Else '구조'
+		End cTest
+		from student;
+
+=> student 에서 point 값 에 따라 grade 구분 'silver', 'gold', 'Plat'  로  나누고, point 에는 '점' 을 붙여 출력
+	-> 구간의 사각지대 존재
+		: 250이하 : 'silver' , 251~287 : 'gold' , 288~400 : 'Plat',  else : Error
+
+	-> 비교 :  실수형에 BETWEEN 을 적용하면 사각지대 발생 : 60.1 ~60.99999 까지 제외됨  
 	-> Between 적용
-	select  snum, sname, height ,
-		CASE WHEN height <= 55 THEN 'S'
-		        WHEN height Between 56 AND 80  THEN 'M'
-		        WHEN height Between 81 AND 100  THEN 'L'
- 		        WHEN height Between 101 AND 120 THEN 'XL'
-		        ELSE 'XXL'
-		END Size
-		from student ; 
+	select id, name,  Concat(point,' 점') Point,  
+		      Case When point <=250 Then 'Silver'
+			When point BETWEEN 251 and 287 Then 'Gold'			
+			When point BETWEEN 288 and 400 Then 'Platinum'
+			Else 'Error' 
+		       End grade
+		       from student;	                                                            
+
+	-> Between 확인 ( 3조  point + 0.45 )
+	update student set point=point+0.45 where jno=3 ;
+	select * from student;
+
+	-> Between 적용하지않음
+	select id, name,  Concat(point,' 점') Point,  
+		      Case When point <=250 Then 'Silver'
+			When point > 250 and point <= 287 Then 'Gold'			
+			When point > 287 and point <= 400 Then 'Platinum'
+			Else 'Error' 
+		       End grade
+		       from student;	   
 
 	-> 구간 정정
 		: 55 이하 : Small , 55초과~80 : Medium , 80초과~100 : Large,  100초과~120 : XLarge, 120 초과 : XXL
@@ -101,7 +94,7 @@ select id, name, jno,
 		from student ;
 
 ( **  size 는 Oracle 예약어 ,
-  **  rank, member 는 MySQL 예약어, 앨리어스로 허용하지않음  )
+  **  rank, member(Table명) 는 MySQL 예약어, 앨리어스로 허용하지않음  )
 
 ** 실습 
 => student Table 에서 point 를 출력,  
@@ -146,6 +139,16 @@ select id, name, jno,
 	( SELECT * FROM BBB B
    		WHERE A.CODE = B.CODE ) ;
 
+	-> 적용 : jno 가 jo Table 에 있는 경우만 student 출력하기
+	select id, name, s.jno from student s
+	where EXISTS ( select jno from jo j where j.jno=s.jno ) ; 
+
+	-> 실습: 조장 출력하기
+	(  id가 jo  Table 의 chief 에 존재하면 출력하기 )
+	select id, name, jno from student
+	where EXISTS (select * from jo where chief = id) ;
+
+
     -> NOT EXISTS : BBB 에 데이터가 없는 AAA 데이터 출력 
 	SELECT * FROM AAA A WHERE NOT EXISTS
 	( SELECT * FROM BBB B
@@ -156,83 +159,37 @@ select id, name, jno,
 	( SELECT * FROM BBB B
    		WHERE A.CODE = B.CODE ) ;		
 
+	-> 적용1 : jno 가 jo Table 에 없는 경우만 student 출력하기
+	select id, name, jno, info from student s
+	where Not Exists (select * from jo j where j.jno=s.jno) ; 
+
+	-> 적용2 : jno 가 jo Table 에 없는 경우의 student, info 를 "조 없음" 으로 수정하기
+	update student s set info = "조 없음"
+	where Not Exists (select * from jo j where j.jno=s.jno) ; 
+
+	select id, name, jno, info from student;
+
 => 실습 
-   -> jno 가 jo 테이블에 있는 경우만 student 출력.
-	select id, name, s.jno from student s
-	where EXISTS (select jno from jo j where j.jno = s.jno);
-
-   -> id가 jo 테이블의 chief에 존재하면 출력.
-	select id,name, jno from student
-	where EXISTS (select * from jo where chief = id);
-
----------------------------------------------------------------
-
--> jno 가 jo 테이블에 없는 경우만 student 출력.
-	select id, name, s.jno from student s
-	where NOT EXISTS (select jno from jo j where j.jno = s.jno);
-
-
--> jno 가 jo 테이블에 없는 경우만 student, info를 "조 없음" 으로 수정.
-	update student s set info="조 없음" where NOT EXISTS (select jno from jo j where j.jno = s.jno);
-	select * from student;
-
--> student 중 조장 아닌 학생만 출력.
-	select id,name, jno from student
-	where NOT EXISTS (select 1 from jo where chief = id);
-	->  서브쿼리 SELECT절 컬럼은 불필요하기 때문에 형식적으로 의미없는 1을 가짐.
-
-IN + 서브쿼리와 비교 (조장 출력)
+	-> student 중 조장 아닌 학생만 출력하기
 	select id, name, jno from student
-	where id in (select chief from jo where chief = id);
+	where Not Exists (select 1 from jo where chief=id) ; 
+	( -> 서브퀴리의 SELECT 절에 컬럼은 불필요하기 때문에 형식적으로 의미없는 1을 기입 )
 
-join과 비교
+=> IN + sub_Query 와 비교 ( 조장 출력하기 )
+	select id, name, jno from student 
+	where  id IN ( select chief from jo where chief=id ) ;
+
+=> Join 와 비교 ( 조장 출력하기 )
+	위와 동일 : jo 에 일치하는 chief 가 존재하는 경우에만 출력 
 	select id, name, s.jno from student s, jo j
-	where s.id = j.chief;
+	where s.id=j.chief ;
 
-   -> student 에서 jo Table의 chief 에 snum 이 있으면 출력
-	- 조장만 출력
-	select snum, sname, jno 
-	from student s
-	where Exists ( select * from jo where s.snum=chief ) ;
-
-	- 조장 아닌 학생만 출력
-	select snum, sname, jno 
-	from student s
-	where Not Exists ( select * from jo where s.snum=chief ) ;
-	
-	.... where EXISTS (select 1 from member m where b.id=m.id) ; 
-	-> 서브퀴리의 SELECT 절에 컬럼은 불필요하기 때문에 형식적으로 의미없는 1을 기입.
-	 
-   -> mymember 에서 board 에 글 쓴적이 1번도 없으면 출력
-	select * from member m where NOT Exists(select * from board b where m.id=b.id) ;
-    
-=> In 과 서브쿼리 비교
-	-> student 에서 jo Table의 chief 에 snum 이 있으면 출력
-	select snum, sname, jno 
-	from student s
-	where snum IN ( select chief from jo where s.snum=chief ) ;
-
-=> Join 과비교
-	select snum, sname, s.jno  from student s, jo where  snum=chief ;
-	-> 위와 동일 : jo 에 일치하는 chief 가 존재하는 경우에만 출력 
-
-=> student 중 jo, cheif가 id가 존재하는 경우에만 "조장" / 아니면 "조원" 출력.
-	select *,
-	case when EXISTS (select * from jo where chief = id) then '조장'
-	else '조원'
-	end test
-	from student s;
-
-=> 
-	
-
-=> Case 에 Exists 조건 적용 예
-	-> Test 위해 jo 에 7조 추가 : insert into jo values(7, 77, '칠면조', '잘먹고잘살자');
-	-> jo Table 에서 jno에 해당하는 조원이 있으면 'Yes' 없으면 'No' 출력 하기
-	select jno, jname, note, chief, 
-		CASE When Exists ( select 1 from student s where s.jno = j.jno ) Then 'Yes'
-		        Else 'No'
-		END 조원 from jo j;	
+=> student 중 jo , chief 에 id 가 존재하면 "조장" / 아니면 "조원" 출력하기 
+	select id, name, s.jno, 
+	Case When Exists(select 1 from jo where chief = id ) Then  "조장"
+	       Else "조원"
+	End 구성	
+ 	from student s; 
  
 	-> mymember 중 board 에 글이 있으면 'Yes' 출력하기
  	select m.id, m.name , m.lev, 
@@ -266,7 +223,7 @@ select seq, b.id, name, title from board b, member m where b.id=m.id ;
 *** join 표준형식2 : 국제표준 (Ansi Join)
 
 select 필드명 from 테이블명1 JOIN 테이블명2 ON 테이블1.조인애트리뷰트=테이블2.조인애트리뷰트 ;
-=> select id,name, s.jno, jname from student s JOIN jo j on  s.jno=j.jno;
+=>  select id, name, s.jno, jname from student s JOIN jo j On s.jno=j.jno ; 
 
 => 종류 : join ~ on, NATURAL JOIN (비권장) , join using, equi join
 
@@ -279,13 +236,13 @@ select 필드명 from 테이블명1 JOIN 테이블명2 ON 테이블1.조인애트리뷰트=테이블2.조
 	select seq, b.id, name, title from board b, member m where b.id=m.id ;  
 
 	-> NATURAL JOIN : 열의 이름과 타입이 같으면 가능
-	select id,name, jno, jname FROM student NATURAL JOIN jo ;
-	
+	select id, name, jno, jname FROM student NATURAL JOIN jo ;
+
 --------------------------
 --------------------------
 ** JOIN  ~  USING
 => 두테이블의 열의 이름이 같을때, 타입은 다를때
-	select snum, sname, jno, jname FROM student JOIN jo USING (jno);
+	select id, name, jno, jname FROM student JOIN jo USING (jno);
 
 	select seq, id, name, title from board JOIN member USING (id);
 
@@ -295,65 +252,60 @@ select 필드명 from 테이블명1 JOIN 테이블명2 ON 테이블1.조인애트리뷰트=테이블2.조
 => 종류 : cross_Join, equi_Join , outer_Join, self_Join
 --------------------------
 ** non equi_Join , cross_Join  ( m*n 갯수 )
-=> student , jo 에서 snum, sname, jno, jname 의 이름을 출력하기
+=> student , jo 에서 id, name, jno, jname 의 이름을 출력하기
 	-> cross_Join : 데이터의 row 의 갯수를 빠르게 늘릴때
-	select snum, sname, s.jno, j.jno, jname from student s, jo j ;
+	select  id, name, s.jno, j.jno, jname from student s, jo j ;
 
 --------------------------
 ** equi_Join : 다른 테이블과 동등비교로 join
 ( equivalent : 동등 )
 
 => equi_Join (동등 조인, inner_Join)
-	select id, name, s.jno, j.jno, jname from student s, jo j
-		where s.jno=j.jno ;
-	-> 조건에 맞는 data 만 출력 ( 조원이 없는 7조와 해당조가 없는 홍길동은 출력 안됨 )
+	select id, name, s.jno, j.jno, jname from student s, jo j  where s.jno=j.jno ;
+	-> 조건에 맞는 data 만 출력 ( 조원이 없는 7조와 해당조가 없는 9조 는 출력 안됨 )
 
- 	-> jo에 7조 'turkey',  "칠면조" 추가
-	Insert into jo values(7, "칠면조", "turkey",)
+	-> jo 에 7조   turkey,  "칠면조" 추가
+	insert into jo values(7, "칠면조", "turkey", "조원 모집") ;
+	select * from jo ;
  
 => outer_Join : 연결되는 값이 있는쪽 기준
     - 종류 : LEFT , RIGHT OUTER JOIN
 
-	-> Test 위해 jo Table 에 없는 9 조 를 가진 홍길동 추가하기
-	insert into student values(24, '홍길동', 33, 'TestTest', 9, 123.45, 'melon');
-
-	-> LEFT OUTER JOIN  (  jno 에 해당하는 조가 jo Table 에 없는 학생_"홍길동" 도 출력됨  )
-	select snum, sname, s.jno, j.jno, jname from student s LEFT OUTER JOIN jo j ON s.jno=j.jno ;
+	-> LEFT OUTER JOIN  (  jno 에 해당하는 조가 jo Table 에 없는 학생들 9조 도 출력됨  )
+	select  id, name, s.jno, j.jno, jname from student s LEFT OUTER JOIN jo j ON s.jno=j.jno ;
 
 	-> RIGHT OUTER JOIN ( jno가 중심 : 조원이 없는 7조도 출력됨, 그러나 해당조가 없는 홍길동은 출력되지않음 )
-	select snum, sname, s.jno, j.jno, jname from student s RIGHT OUTER JOIN jo j ON s.jno=j.jno ;
+	select  id, name, s.jno, j.jno, jname from student s RIGHT OUTER JOIN jo j ON s.jno=j.jno ;
 	
 ===================================================================
 ------------------------------------------------
 ** SELF_JOIN : 하나의 테이블 내에서 Join
 ------------------------------------------------
 
-=>복습1: studentr 의 id, name, jno, testid, 추천인의 이름 출력하기
-	select s1.id, s1.name, s1.jno, s1.testid, s2.name 추천인 from studentr s1, studentr s2 
-	where s1.testid=s2.id;
+=> 복습1: studentr 의 id, name, jno, testid, 추천인(testid) 의 이름 출력하기
+	-> select  s1.id, s1.name, s1.jno, s1.testid, s2.name 추천인 from studentr s1, studentr s2 
+		where s1.testid=s2.id ;
 
-=>복습2: studentr 의 id, name, jno, jname, 조장id, 조장이름 출력하기
-	select s1.id, s1.name, s1.jno, jname, chief, s2.name 
-	from studentr s1, jor j, studentr s2
-	where s1.jno=j.jno and j.chief = s2.id;
+=> 복습2: student 의 id, name, jno, jname, chief 조장ID, s2.name 조장이름 출력하기
+	-> select  s1.id, s1.name, s1.jno, jname, chief 조장ID, s2.name 조장이름
+		from student s1, jo j, student s2
+		where s1.jno=j.jno and j.chief = s2.id ;  
 
-=> 복습3: jo 테이블에 jno가 없어도 모든 학생 출력하기.
-	: 2개 이상의 table을 outer join 하는 것은 불가능. 문법적으로 허용안됨. 
-	: 서브쿼리 사용하여 해결.
+=> 위의 2번에 student, jo table 에 jno 가 없어도 출력되도록하기 (모든학생 은 출력 되도록) 
+	: 2개 이상의 Table을 Outer Join 하는것은 불가능 (문법적으로 허용안됨)
+	: sub_Query 를 이용함
 
-	1)  select  s1.id, s1.name, s1.jno, jname, chief 조장ID, (select name from student where id=chief) 조장이름
-      	from student s1  LEFT OUTER JOIN  jo j
-      	ON s1.jno=j.jno ; 
+	select  s1.id, s1.name, s1.jno, jname, chief 조장ID, (select name from student where id=chief) 조장이름
+		from student s1  LEFT OUTER JOIN  jo j
+		ON s1.jno=j.jno ; 
 
-  	2) select  s1.id, s1.name, s1.jno, jname, chief 조장ID, 
-      	CASE When Exists (select name from student where id=chief) Then (select name from student where id=chief) 
-              Else "없음" 
-      	End 조장이름
-      	from student s1  LEFT OUTER JOIN  jo j
-      	ON s1.jno=j.jno ; 
+	select  s1.id, s1.name, s1.jno, jname, chief 조장ID, 
+		CASE When Exists (select 1 from student where id=chief) Then (select name from student where id=chief) 
+		        Else "없음" 
+		End 조장이름
+		from student s1  LEFT OUTER JOIN  jo j
+		ON s1.jno=j.jno ; 
 
-
- 
 
 => 3개 Table 조인 :  snum, sname, jno, jname, chief, 조장이름 출력하기
 
@@ -366,9 +318,9 @@ select 필드명 from 테이블명1 JOIN 테이블명2 ON 테이블1.조인애트리뷰트=테이블2.조
 =======================================================================
   Sub Query  
 =======================================================================
-=> 종류 : single row S , multi row S, multi column S, corelated S
+=> 종류 : single row S , multi row S, multi column S, correlated(상관 관계) S
 
-** 과제 :  id = 'BANANA' 와 같은 조원 출력
+** 과제 :  id = 'BANANA'  와 같은 조원 출력
 	1) id = 'BANANA' 인 학생의 jno 가 필요 :  select jno from student where id='BANANA'
 	2) 이 jno 와 동일한 조원을 출력하면됨   :  select snum, sname, jno from student where jno = 위의 jno ;
 
@@ -401,10 +353,10 @@ select 필드명 from 테이블명1 JOIN 테이블명2 ON 테이블1.조인애트리뷰트=테이블2.조
 ***  Join + Sub Query
 ----------------------------------------------------------------------
 => student 에서 id="KYR" 인 학생의 age 보다 age 값이 크거나 같은 학생들의 id, name, age, jno, jname 출력하기
+	SELECT id, name, age, s.jno, jname 
+	FROM student s, jo j
+	WHERE s.jno = j.jno and age >= (SELECT age FROM student WHERE id = 'KYR');
 
-
-	select id, name, age, s.jno, jname from student s, jo j
-	where age >= (select age from student where id="KYR1") and s.jno = j.jno;
 
 ============================================================== 
 
