@@ -1,0 +1,48 @@
+* user 테이블 생성
+CREATE table user(
+id varchar(10) primary key,
+pw varchar(20) not null,
+name varchar(20) not null,
+address varchar(20) not null,
+phonenum varchar(20) not null,
+point int(5) default 1000 not null
+);
+
+* user 데이터 삽입
+insert into user values("yulmi123", "mysql123@gmail.com", "김유림", "용인시 기흥구", "010-1234-1234", "1000");
+insert into user values("bbang", "mysql124@gmail.com", "정호진", "용인시 에버랜드", "010-1234-1235", "1000");
+insert into user values("zzang", "mysql125@gmail.com", "류승제", "야탑역", "010-1234-1236", "1000");
+insert into user values("babo", "mysql126@gmail.com", "심승준", "안성시 빙어축제", "010-1234-1237", "1000");
+insert into user values("merong", "mysql127@gmail.com", "루피", "롯데월드", "010-1234-1238", "1000");
+
+* coupon 테이블 생성
+CREATE table coupon(
+couponcode varchar(10) primary key,
+Foreign Key coupon(id) references user(id)
+	ON Delete Cascade
+);
+
+* review 테이블 생성
+CREATE table review(
+review_seq int unsigned auto_increment primary key,
+review_time datetime not null,
+storename varchar(10) not null,
+contents varchar(2000) not null,
+Foreign Key review(id) references user(id)
+	ON Delete Cascade
+);
+
+* address 테이블 생성
+CREATE table address(
+address_seq int unsigned auto_increment primary key,
+address varchar(50),
+Foreign Key address(id) references user(id)
+	ON Delete Cascade
+);
+
+* order 테이블 생성
+CREATE table order(
+ordernum int(10) primary key,
+Foreign Key order(id) references user(id)
+	ON Delete Cascade
+);
